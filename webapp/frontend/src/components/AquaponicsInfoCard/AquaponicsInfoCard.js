@@ -75,12 +75,6 @@ const AquaponicsInfoCard = ({ deviceId }) => {
           <span className="icon plant-icon">{plantIcon}</span>
         </div>
       </div>
-
-      <div className="card-footer">
-        <div className="countdown-info">
-          Следующий факт через: {secondsLeft} сек
-        </div>
-      </div>
     </div>
   );
 };
