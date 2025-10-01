@@ -161,7 +161,7 @@ function Dashboard() {
           }
         }),
         axios.get(API_CONFIG.endpoints.historicalLight, {
-          baseURL: API_CONFIG.baseURL,
+          baseURL: 'https://aquaponiks.ru',
           params: {
             device_id: deviceId,
             start: start.toISOString(),

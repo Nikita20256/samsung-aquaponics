@@ -2,9 +2,7 @@
 .plants-container {
   position: relative;
   min-height: 100vh;
-
-  padding: 40px 20px;
-  background: linear-gradient(135deg, #f8fff8 0%, #e8f5e8 100%);
+  padding: 1px 20px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -21,46 +19,19 @@
 }
 
 .background-overlay {
-
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
-  padding: 40px 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start; /* или center — по желанию */
-  gap: 20px; /* расстояние между текстом и изображением */
-}
-.plant-text {
-  flex: 1;
-}
-.plant-image {
-  width: 100%;
-  height: auto;
-  object-fit: cover;
-}
-
-.plants-overlay {
-
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-
   background: url('./assets/images/flot.png') center/cover no-repeat;
-  opacity: 0.05;
-
-  background-color: rgba(255, 255, 255, 0.85);
+  opacity: 0.1;
   z-index: 1;
-
 }
 
 .plants-content {
   position: relative;
   z-index: 2;
-
   width: 100%;
   max-width: 1400px;
 }
@@ -69,7 +40,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 160px;
+  gap: 110px;
 }
 
 .plant-card {
@@ -80,8 +51,8 @@
   text-align: center;
   transition: all 0.3s ease;
   border: 2px solid rgba(255, 255, 255, 0.2);
-  width: 400px;
-  height: 670px;
+  width: 300px;
+  height: 570px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -97,8 +68,8 @@
 }
 
 .plant-image-container {
-  width: 240px;
-  height: 240px;
+  width: 220px;
+  height: 220px;
   margin: 0 auto 30px;
   background: transparent;
   border-radius: 50%;
@@ -110,8 +81,8 @@
 }
 
 .plant-image {
-  width: 370px;
-  height: 370px;
+  width: 350px;
+  height: 350px;
   object-fit: contain;
   border-radius: 0;
   filter: drop-shadow(0 4px 15px rgba(0, 0, 0, 0.3));
@@ -129,7 +100,7 @@
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-/* Модальное окно */
+/* Модальное окно - обновленный дизайн как на картинке */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -145,28 +116,31 @@
 }
 
 .modal-content {
-  background: white;
-  border-radius: 20px;
-  width: 1145px; /* Фиксированная ширина */
-  height: 795px; /* Фиксированная высота */
+  background: #D4E5A3; /* Заливка всей плашки цветом D4E5A3 */
+  border-radius: 25px;
+  width: 90%;
+  max-width: 1140px;
+  height: auto;
+  max-height: 90vh;
   position: relative;
   animation: slideUp 0.3s ease;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .modal-close {
   position: absolute;
-  top: 20px;
-  right: 25px;
+  top: 25px;
+  right: 30px;
   background: none;
   border: none;
-  font-size: 35px;
-  color: #666;
+  font-size: 40px;
+  color: #138962;
   cursor: pointer;
-  width: 45px;
-  height: 45px;
+  width: 50px;
+  height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -176,76 +150,63 @@
 }
 
 .modal-close:hover {
-  background: #f0f0f0;
-  color: #333;
+  background: rgba(19, 137, 98, 0.1);
+  color: #0d6a4a;
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
 }
 
 .modal-header {
-  background: #138962;
-  padding: 35px 40px;
-  border-radius: 20px 20px 0 0;
+  background: transparent;
+  padding: 40px 50px 1px 50px; /* Добавлен отступ 60px снизу */
   flex-shrink: 0;
 }
 
 .modal-title {
-  color: white;
-  font-size: 3rem;
+  color: #138962;
+  font-size: 90px; /* Размер заголовка 90px */
   font-weight: normal;
   margin: 0;
   font-family: 'Calypso', sans-serif;
   text-align: center;
+  line-height: 1;
 }
 
-.modal-body {
-  padding: 50px;
-  display: flex;
-  gap: 50px;
-  align-items: flex-start;
+.modal-info-content {
   flex: 1;
-  overflow: hidden;
-}
-
-.modal-image-container {
-  flex: 0 0 280px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: #f8fff8;
-  border-radius: 15px;
-  padding: 20px;
-  border: 2px solid rgba(19, 137, 98, 0.1);
-}
-
-.modal-image {
-  width: 100%;
-  max-width: 240px;
-  height: auto;
-  object-fit: contain;
-}
-
-.modal-info {
-  flex: 1;
+  padding: 0 50px 50px 50px;
   display: flex;
   flex-direction: column;
-  gap: 35px;
-  height: 100%;
   overflow-y: auto;
-  padding-right: 10px;
+}
+
+.content-wrapper {
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-width: 800px;
 }
 
 .info-section {
-  background: #f8fff8;
-  padding: 25px;
-  border-radius: 12px;
-  border-left: 5px solid #138962;
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  border: none;
 }
 
 .info-title {
   color: #138962;
-  font-size: 1.5rem;
+  font-size: 36px; /* Размер текста 36px */
   font-weight: bold;
-  margin-bottom: 20px;
-  font-family: 'Arial', sans-serif;
+  margin-bottom: 6px;
+  font-family: 'Calypso', sans-serif;
+  text-align: left;
 }
 
 .info-list {
@@ -255,16 +216,19 @@
 }
 
 .info-list li {
-  padding: 10px 0;
-  line-height: 1.6;
-  color: #333;
+  padding: 8px 0;
+  line-height: 1.5;
+  color: #138962;
   position: relative;
-  padding-left: 20px;
-  border-bottom: 1px solid rgba(19, 137, 98, 0.1);
-  font-size: 1.1rem;
-}
-
-.info-list li:last-child {
+  padding-left: 25px;
+  padding-right: 0;
+  font-size: 33px;
+  font-weight: normal;
+  text-align: left;
+  font-family: 'Calypso', sans-serif;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  /* Убраны линии border-bottom */
   border-bottom: none;
 }
 
@@ -274,23 +238,29 @@
   font-weight: bold;
   position: absolute;
   left: 0;
-  top: 10px;
-  font-size: 1.3rem;
+  top: 12px;
+  font-size: 40px;
 }
 
 .description-section {
-  background: #f8fff8;
-  padding: 25px;
-  border-radius: 12px;
-  border: 2px solid rgba(19, 137, 98, 0.2);
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  border: none;
+  margin-top: 20px;
 }
 
 .plant-description {
-  line-height: 1.7;
-  color: #555;
-  font-size: 1.2rem;
+  line-height: 1.4;
+  color: #138962;
+  font-size: 33px;
   margin: 0;
-  font-style: italic;
+  font-style: normal;
+  font-weight: normal;
+  text-align: left;
+  font-family: 'Calypso', sans-serif;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 /* Анимации */
@@ -314,25 +284,21 @@
 @media (max-width: 1200px) {
   .modal-content {
     width: 95%;
-    height: 85vh;
-    max-width: 1000px;
-  }
-  
-  .modal-body {
-    padding: 40px;
-    gap: 40px;
-  }
-  
-  .modal-image-container {
-    flex: 0 0 220px;
-  }
-  
-  .modal-image {
-    max-width: 200px;
+    max-width: 1200px;
   }
   
   .modal-title {
-    font-size: 2.5rem;
+    font-size: 70px;
+  }
+  
+  .info-title,
+  .info-list li,
+  .plant-description {
+    font-size: 30px;
+  }
+  
+  .plants-grid {
+    gap: 80px;
   }
 }
 
@@ -340,209 +306,171 @@
 @media (max-width: 992px) {
   .modal-content {
     width: 95%;
-    height: 90vh;
-  }
-  
-  .modal-body {
-    flex-direction: column;
-    padding: 30px;
-    gap: 30px;
-  }
-  
-  .modal-image-container {
-    flex: 0 0 auto;
-    width: 100%;
-    max-width: 200px;
-    margin: 0 auto;
-  }
-  
-  .modal-image {
-    max-width: 180px;
-  }
-  
-  .modal-title {
-    font-size: 2.2rem;
+    max-width: 900px;
   }
   
   .modal-header {
-    padding: 25px 30px;
-    max-width: 1000px;
-    margin: 0 auto;
-}
-
-.plant-section {
-  margin-bottom: 40px;
-}
-
-.plant-title {
-  font-size: 2.2rem;
-  color: #1a4314;
-  margin-bottom: 20px;
-  font-weight: bold;
-  font-family: 'Calypso', sans-serif;
-}
-
-.plant-text-content {
-  display: flex;
-  gap: 40px;
-  align-items: flex-start;
-  font-family: 'Calypso', sans-serif;
-}
-
-.plant-text {
-  flex: 1;
-}
-
-.plant-image-wrapper {
-  flex: 0 0 300px;
- 
-  border-radius: 10px;
-  padding: 15px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.plant-image {
-  max-width: 100%;
-  max-height: 250px;
-  object-fit: contain;
-}
-
-.plant-subtitle {
-  font-weight: bold;
-  margin-bottom: 10px;
-  font-size: 1.2rem;
-  color: #2E7D32;
-}
-
-.plant-list {
-  padding-left: 20px;
-  margin-bottom: 20px;
-  list-style-type: none;
-}
-
-.plant-list li {
-  margin-bottom: 8px;
-  line-height: 1.6;
-  position: relative;
-  padding-left: 15px;
-}
-
-.plant-list li::before {
-  content: "•";
-  color: #2E7D32;
-  font-weight: bold;
-  position: absolute;
-  left: 0;
-}
-
-.plant-description {
-  line-height: 1.6;
-  font-size: 1.1rem;
-}
-
-.divider {
-  height: 1px;
-  background-color: #ddd;
-  margin: 30px 0;
-
+    padding: 35px 40px 50px 40px; /* Отступ 50px на планшетах */
+  }
+  
+  .modal-info-content {
+    padding: 0 40px 40px 40px;
+  }
+  
+  .modal-title {
+    font-size: 60px;
+  }
+  
+  .info-title,
+  .info-list li,
+  .plant-description {
+    font-size: 26px;
+  }
+  
+  .info-list li {
+    padding: 10px 0;
+    padding-left: 20px;
+  }
+  
+  .info-list li::before {
+    font-size: 35px;
+    top: 10px;
+  }
+  
+  .plants-grid {
+    gap: 60px;
+  }
+  
+  .plant-card {
+    width: 280px;
+    height: 520px;
+  }
 }
 
 /* Адаптация для мобильных устройств */
 @media (max-width: 768px) {
-
   .modal-content {
     width: 95%;
-    height: 95vh;
-  }
-  
-  .modal-body {
-    padding: 25px;
-    gap: 25px;
-  }
-  
-  .modal-image-container {
-    max-width: 150px;
-    padding: 15px;
-  }
-  
-  .modal-image {
-    max-width: 140px;
-  }
-  
-  .modal-title {
-    font-size: 2rem;
+    margin: 20px;
   }
   
   .modal-header {
-    padding: 20px 25px;
+    padding: 30px 30px 40px 30px; /* Отступ 40px на мобильных */
   }
   
-  .info-title {
-    font-size: 1.3rem;
+  .modal-info-content {
+    padding: 0 30px 30px 30px;
+  }
+  
+  .modal-title {
+    font-size: 45px;
+  }
+  
+  .info-title,
+  .info-list li,
+  .plant-description {
+    font-size: 22px;
   }
   
   .info-list li {
-    font-size: 1rem;
+    padding: 8px 0;
+    padding-left: 20px;
   }
   
-  .plant-description {
-    font-size: 1.1rem;
+  .info-list li::before {
+    font-size: 30px;
+    top: 8px;
+  }
+  
+  .content-wrapper {
+    gap: 20px;
+  }
+  
+  .plants-grid {
+    flex-direction: column;
+    gap: 40px;
+  }
+  
+  .plant-card {
+    width: 320px;
+    height: 550px;
+    padding: 25px 20px;
+  }
+  
+  .plant-image-container {
+    width: 200px;
+    height: 200px;
+    margin-bottom: 20px;
+  }
+  
+  .plant-name {
+    font-size: 28px;
+    margin-bottom: 85px;
+  }
+  
+  .plants-container {
+    padding: 20px 15px;
   }
 }
 
-/* Остальные медиа-запросы для карточек растений */
+/* Остальные медиа-запросы */
 @media (max-width: 1440px) {
   .plant-name { font-size: 42px; }
-}
-
-@media (max-width: 1200px) {
-  .plants-grid { gap: 80px; }
-  .plant-card { width: 350px; height: 600px; padding: 30px 25px; }
-  .plant-image-container { width: 220px; height: 220px; margin-bottom: 25px; }
-  .plant-name { font-size: 36px; margin-bottom: 95px; }
-}
-
-@media (max-width: 992px) {
-  .plant-name { font-size: 32px; }
-}
-
-@media (max-width: 768px) {
-  .plants-grid { flex-direction: column; gap: 40px; }
-  .plant-card { width: 320px; height: 550px; padding: 25px 20px; }
-  .plant-image-container { width: 200px; height: 200px; margin-bottom: 20px; }
-  .plant-name { font-size: 28px; margin-bottom: 85px; }
-  .plants-container { padding: 20px 15px; }
 }
 
 @media (max-width: 480px) {
   .plant-card { width: 280px; height: 500px; padding: 20px 15px; }
   .plant-image-container { width: 180px; height: 180px; margin-bottom: 15px; }
   .plant-name { font-size: 24px; margin-bottom: 75px; }
+  
+  .modal-header {
+    padding: 25px 25px 30px 25px; /* Отступ 30px на маленьких мобильных */
+  }
+  
+  .modal-info-content {
+    padding: 0 25px 25px 25px;
+  }
+  
+  .modal-title {
+    font-size: 38px;
+  }
+  
+  .info-title,
+  .info-list li,
+  .plant-description {
+    font-size: 20px;
+  }
+  
+  .modal-close {
+    top: 15px;
+    right: 20px;
+    font-size: 35px;
+    width: 45px;
+    height: 45px;
+  }
 }
 
 @media (max-width: 360px) {
   .plant-name { font-size: 22px; }
-
-  .plant-text-content {
-    flex-direction: column;
-    gap: 20px;
-  }
-  
-  .plant-image-wrapper {
-    flex: 0 0 auto;
-    width: 100%;
-    order: -1;
-  }
-  
-  .plant-title {
-    font-size: 1.8rem;
-  }
-  
   .plants-container {
-    padding: 20px 15px;
-    background-attachment: scroll;
+    padding: 20px 10px;
   }
-}
+  
+  .modal-title {
+    font-size: 32px;
+  }
+  
+  .info-title,
+  .info-list li,
+  .plant-description {
+    font-size: 18px;
+  }
+  
+  .info-list li {
+    padding-left: 18px;
+  }
+  
+  .info-list li::before {
+    font-size: 25px;
+  }
 }

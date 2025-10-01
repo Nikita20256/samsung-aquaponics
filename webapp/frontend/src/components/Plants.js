@@ -3,6 +3,7 @@ import "./Plants.css";
 import rukolaImg from "./assets/images/image 6.svg";
 import bazilikImg from "./assets/images/image 17.svg";
 import redisImg from "./assets/images/image 18.svg";
+import flotBg from "./assets/images/flot.png";
 
 function Plants() {
   const [selectedPlant, setSelectedPlant] = useState(null);
@@ -87,27 +88,25 @@ function Plants() {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <button className="modal-close" onClick={closeModal}>×</button>
             
-            <div className="modal-header">
-              <h2 className="modal-title">{selectedPlant.name}</h2>
-            </div>
-            
             <div className="modal-body">
-              <div className="modal-image-container">
-                <img src={selectedPlant.image} alt={selectedPlant.name} className="modal-image" />
+              <div className="modal-header">
+                <h2 className="modal-title">{selectedPlant.name}</h2>
               </div>
               
-              <div className="modal-info">
-                <div className="info-section">
-                  <h3 className="info-title">Содержит:</h3>
-                  <ul className="info-list">
-                    {selectedPlant.contains.map((item, index) => (
-                      <li key={index}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-                
-                <div className="description-section">
-                  <p className="plant-description">{selectedPlant.description}</p>
+              <div className="modal-info-content">
+                <div className="content-wrapper">
+                  <div className="info-section">
+                    <h3 className="info-title">Содержит:</h3>
+                    <ul className="info-list">
+                      {selectedPlant.contains.map((item, index) => (
+                        <li key={index}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  
+                  <div className="description-section">
+                    <p className="plant-description">{selectedPlant.description}</p>
+                  </div>
                 </div>
               </div>
             </div>
