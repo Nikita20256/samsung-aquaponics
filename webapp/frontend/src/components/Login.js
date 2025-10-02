@@ -20,14 +20,14 @@ function Login({ setToken }) {
       setError('');
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.error || 'Login failed');
+      setError(err.response?.data?.error || 'Ошибка входа');
     }
   };
 
   return (
     <div className="login-page">
       <form className="login-form" onSubmit={handleSubmit}>
-        <label className="login-label">login</label>
+        <label className="login-label">Логин</label>
         <input
           type="text"
           value={login}
@@ -35,7 +35,7 @@ function Login({ setToken }) {
           className="login-input"
           required
         />
-        <label className="login-label">password</label>
+        <label className="login-label">Пароль</label>
         <input
           type="password"
           value={password}

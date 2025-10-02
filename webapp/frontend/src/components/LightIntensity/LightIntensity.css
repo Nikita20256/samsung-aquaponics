@@ -7,9 +7,9 @@
   flex-direction: column;
   justify-content: space-between;
   text-align: center;
-  border: 1px solid #5A8C5F;
-  box-shadow: 0 6px 18px rgba(46, 91, 55, 0.15);
-  background: linear-gradient(135deg, #DEF2DA 0%, #AED7AE 100%);
+  border: 1px solid #C7E5C7;
+  box-shadow: 0 4px 12px rgba(100, 140, 100, 0.15);
+  background: linear-gradient(135deg, #F3FBF1 0%, #E2F4E1 100%);
   transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
   position: relative;
   overflow: hidden;
@@ -28,7 +28,7 @@
 
 .light-card:hover {
   transform: translateY(-5px) scale(1.02);
-  box-shadow: 0 12px 24px rgba(46, 91, 55, 0.25);
+  box-shadow: 0 8px 24px rgba(85, 125, 85, 0.25);
 }
 
 .light-header {
@@ -37,13 +37,13 @@
   align-items: center;
   margin-bottom: 1.2rem;
   padding-bottom: 0.8rem;
-  border-bottom: 1px solid #A5D6A780;
+  border-bottom: 1px dashed #CDE7CD;
   position: relative;
   z-index: 2;
 }
 
 .light-title {
-  color: #2E7D32;
+  color: #3B643B;
   font-size: 1.1rem;
   font-weight: 600;
   margin: 0;
@@ -185,7 +185,7 @@
 .light-footer {
   margin-top: 0.9rem;
   padding-top: 0.6rem;
-  border-top: 1px solid #A5D6A780;
+  border-top: 1px dashed #CDE7CD;
   position: relative;
   z-index: 2;
 }
