@@ -103,25 +103,67 @@ db.serialize(async () => {
   }
 });
 
-// Очередь для операций вставки, если одновременно пришло много данных
-const insertQueue = [];
-let isProcessingQueue = false;
+// Буфер для накопления данных за час
+const hourlyBuffer = new Map(); // { deviceId: { humidity: [], light: [], temperature: [] } }
 
-async function processInsertQueue() {
-  if (isProcessingQueue || insertQueue.length === 0) return;
-  isProcessingQueue = true;
-
-  const { table, deviceId, value, timestamp } = insertQueue.shift();
-  db.run(
-    `INSERT INTO ${table} (device_id, value, timestamp) VALUES (?, ?, ?)`,
-    [deviceId, value, timestamp],
-    (err) => {
-      if (err) console.error(`SQLite insert error (${table}): ${err.message}`);
-      isProcessingQueue = false;
-      processInsertQueue();
-    }
-  );
+// Функция для добавления данных в буфер
+function addToBuffer(deviceId, sensorType, value) {
+  if (!hourlyBuffer.has(deviceId)) {
+    hourlyBuffer.set(deviceId, { humidity: [], light: [], temperature: [] });
+  }
+  hourlyBuffer.get(deviceId)[sensorType].push(value);
 }
+
+// Функция для сохранения усредненных данных за час
+function saveHourlyData() {
+  const now = new Date();
+  const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:00:00`;
+  
+  hourlyBuffer.forEach((sensorData, deviceId) => {
+    ['humidity', 'light', 'temperature'].forEach(sensorType => {
+      const values = sensorData[sensorType];
+      if (values.length > 0) {
+        const average = values.reduce((sum, val) => sum + val, 0) / values.length;
+        const roundedAverage = Math.round(average * 100) / 100;
+        
+        db.run(
+          `INSERT INTO ${sensorType} (device_id, value, timestamp) VALUES (?, ?, ?)`,
+          [deviceId, roundedAverage, timestamp],
+          (err) => {
+            if (err) {
+              console.error(`Error saving hourly ${sensorType} for ${deviceId}: ${err.message}`);
+            } else {
+              console.log(`Saved hourly ${sensorType} for ${deviceId}: ${roundedAverage} (${values.length} samples)`);
+            }
+          }
+        );
+      }
+    });
+  });
+  
+  // Очищаем буфер после сохранения
+  hourlyBuffer.clear();
+}
+
+// Запуск сохранения ровно в каждый час
+function scheduleHourlySave() {
+  const now = new Date();
+  const nextHour = new Date(now);
+  nextHour.setHours(now.getHours() + 1, 0, 0, 0); // Следующий час, 0 минут, 0 секунд
+  
+  const timeToNextHour = nextHour.getTime() - now.getTime();
+  
+  setTimeout(() => {
+    saveHourlyData();
+    // После первого сохранения запускаем интервал каждый час
+    setInterval(saveHourlyData, 60 * 60 * 1000);
+  }, timeToNextHour);
+  
+  console.log(`Next hourly save scheduled at ${nextHour.toLocaleString()}`);
+}
+
+// Запускаем планировщик
+scheduleHourlySave();
 
 // Форматирование времени для занесения в базу
 function getLocalTimestamp() {
@@ -155,7 +197,9 @@ function authenticateToken(req, res, next) {
 
 // MQTT подключение
 const mqttClient = mqtt.connect('mqtt://147.45.102.173:1883', {
-  reconnectPeriod: 1000
+  reconnectPeriod: 1000,
+  username: 'device1',
+  password: 'aqua'
 });
 
 const latestData = new Map();
@@ -272,21 +316,17 @@ mqttClient.on('message', (topic, message) => {
     }
     const deviceData = latestData.get(deviceId);
 
-    // Получаем локальное время EEST
-    const timestamp = getLocalTimestamp();
-
-    // Добавляем в очередь вставку
+    // Обновляем текущие значения и добавляем в буфер для часового усреднения
     if (sensorType === 'humidity') {
       deviceData.humidity = value;
-      insertQueue.push({ table: 'humidity', deviceId, value, timestamp });
+      addToBuffer(deviceId, 'humidity', value);
     } else if (sensorType === 'light') {
       deviceData.light = value;
-      insertQueue.push({ table: 'light', deviceId, value, timestamp });
+      addToBuffer(deviceId, 'light', value);
     } else if (sensorType === 'temperature') {
       deviceData.temperature = value;
-      insertQueue.push({ table: 'temperature', deviceId, value, timestamp });
+      addToBuffer(deviceId, 'temperature', value);
     }
-    processInsertQueue();
   });
 });
 
