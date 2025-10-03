@@ -248,7 +248,10 @@ mqttClient.on('message', (topic, message) => {
 
   // Обработка VklSvet (счетчик включений)
   if (sensorType === 'VklSvet') {
-    if (messageStr === '1') {
+    // Убираем все нецифровые символы и приводим к числу
+    const digitsOnly = messageStr.replace(/[^0-9-]/g, '');
+    const numeric = parseInt(digitsOnly, 10);
+    if (!Number.isNaN(numeric) && numeric > 0) {
       // Логируем включение света
       console.log(`Received light switch activation from device ${deviceId}`);
       
