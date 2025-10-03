@@ -230,11 +230,14 @@ mqttClient.on('message', (topic, message) => {
 
   // Обработка water (1 или 0)
   if (sensorType === 'water') {
-    const waterLevel = messageStr === '1' ? 1 : 0;
-    
+    // Убираем все нецифровые символы (включая скрытые, переносы строк и т.п.)
+    const digitsOnly = messageStr.replace(/[^0-9-]/g, '');
+    const numeric = parseInt(digitsOnly, 10);
+    const waterLevel = Number.isNaN(numeric) ? 0 : (numeric > 0 ? 1 : 0);
+
     // Логируем уровень воды
     console.log(`Received water level from device ${deviceId}: ${waterLevel}`);
-    
+
     // Обновляем последние значения
     if (!latestData.has(deviceId)) {
       latestData.set(deviceId, { humidity: 0, light: 0, temperature: 0, water: 0 });
