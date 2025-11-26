@@ -54,10 +54,27 @@
     background-color: #0f4c38;
   }
   
-  .login-error {
-    color: red;
-    font-size: 0.9rem;
-    margin-bottom: 1rem;
-    text-align: center;
-  }
+.login-error {
+  color: red;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.login-link {
+  color: #b5ff2b;
+  font-size: 0.9rem;
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.login-link a {
+  color: #b5ff2b;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.login-link a:hover {
+  color: #8fcc1f;
+}
   

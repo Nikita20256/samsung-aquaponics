@@ -55,20 +55,70 @@ const SensorChart = ({ historicalData, startDate, endDate, onTimeRangeChange }) 
   };
 
   // Вспомогательные функции
-  const toLabel = (ts) => ts.replace(' ', 'T'); // локальное время, без 'Z'
+  // Преобразуем timestamp из БД (формат ISO с Z) в локальное время для отображения
+  const toLabel = (ts) => {
+    if (!ts) return '';
+    
+    // Если timestamp уже в формате ISO с Z (UTC), используем как есть
+    if (ts.includes('Z') && ts.includes('T')) {
+      return ts;
+    }
+    
+    // Если формат 'YYYY-MM-DD HH:MM:SS', преобразуем в ISO
+    if (ts.includes(' ') && !ts.includes('T')) {
+      return ts.replace(' ', 'T') + 'Z';
+    }
+    
+    // Если формат 'YYYY-MM-DDTHH:MM:SS' без Z, добавляем Z
+    if (ts.includes('T') && !ts.includes('Z')) {
+      return ts + 'Z';
+    }
+    
+    // Пытаемся распарсить как дату
+    const date = new Date(ts);
+    if (!isNaN(date.getTime())) {
+      return date.toISOString();
+    }
+    
+    console.warn('Invalid timestamp format:', ts);
+    return ts;
+  };
 
   // Данные в БД уже усреднены, дополнительное сглаживание не требуется
 
   const processed = useMemo(() => {
-    if (!historicalData) return null;
+    if (!historicalData) {
+      console.log('SensorChart: historicalData is null');
+      return null;
+    }
     const seriesMap = {
       humidity: historicalData.humidity || [],
       light: historicalData.light || [],
       temperature: historicalData.temperature || []
     };
     const current = seriesMap[activeMetric] || [];
-    const labels = current.map((i) => toLabel(i.timestamp));
+    console.log(`SensorChart: activeMetric=${activeMetric}, data length=${current.length}`, current);
+    
+    if (current.length === 0) {
+      return { labels: [], values: [] };
+    }
+    
+    const labels = current.map((i, idx) => {
+      if (!i || !i.timestamp) {
+        console.warn(`SensorChart: Missing timestamp at index ${idx}`, i);
+        return '';
+      }
+      const label = toLabel(i.timestamp);
+      // Проверяем, что label валидная дата
+      const testDate = new Date(label);
+      if (isNaN(testDate.getTime())) {
+        console.warn(`SensorChart: Invalid date label at index ${idx}:`, label, 'original:', i.timestamp);
+      }
+      return label;
+    }).filter(label => label !== '');
+    
     const values = current.map((i) => Number(i.value));
+    console.log(`SensorChart: processed labels=${labels.length}, values=${values.length}`, labels.slice(0, 3));
     return { labels, values };
   }, [historicalData, activeMetric]);
 
@@ -117,8 +167,21 @@ const SensorChart = ({ historicalData, startDate, endDate, onTimeRangeChange }) 
           title: (items) => {
             if (!items || !items.length) return '';
             const label = items[0].label;
+            if (!label) return '';
             const d = new Date(label);
-            return d.toLocaleString();
+            if (isNaN(d.getTime())) {
+              console.warn('Invalid date in tooltip:', label);
+              return label;
+            }
+            // Красивое отображение даты и времени
+            return d.toLocaleString('ru-RU', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit'
+            });
           },
           label: (item) => {
             const value = item.parsed.y;
@@ -137,8 +200,18 @@ const SensorChart = ({ historicalData, startDate, endDate, onTimeRangeChange }) 
           font: { size: 13 },
           callback: function(value) {
             const label = this.getLabelForValue(value);
+            if (!label) return '';
             const date = new Date(label);
-            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+            if (isNaN(date.getTime())) {
+              console.warn('Invalid date in x-axis:', label);
+              return label;
+            }
+            // Красивое отображение времени на оси X
+            return date.toLocaleTimeString('ru-RU', { 
+              hour: '2-digit', 
+              minute: '2-digit',
+              hour12: false 
+            });
           },
           maxRotation: 0,
           autoSkip: true

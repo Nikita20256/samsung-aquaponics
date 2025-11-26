@@ -161,7 +161,7 @@ function Dashboard() {
           }
         }),
         axios.get(API_CONFIG.endpoints.historicalLight, {
-          baseURL: 'https://aquaponiks.ru',
+          baseURL: API_CONFIG.baseURL,
           params: {
             device_id: deviceId,
             start: start.toISOString(),
@@ -183,6 +183,12 @@ function Dashboard() {
           }
         })
       ]);
+      
+      console.log('Dashboard: Received historical data', {
+        humidity: humData.data,
+        light: lightData.data,
+        temperature: tempData.data
+      });
       
       setHistoricalData({
         humidity: humData.data || null,

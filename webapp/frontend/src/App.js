@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import Navbar from './components/Navbar';
 import Login from './components/Login';
+import Register from './components/Register';
 import Dashboard from './components/Dashboard/Dashboard';
 import Plants from './components/Plants';
 import HomePage from './components/HomePage'; // Перенесли в components
@@ -33,6 +34,7 @@ function App() {
         {/* Публичные маршруты */}
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<Login setToken={setToken} />} />
+        <Route path="/register" element={<Register setToken={setToken} />} />
         
         {/* Защищенные маршруты */}
         <Route

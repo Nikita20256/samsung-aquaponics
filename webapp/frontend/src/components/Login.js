@@ -3,6 +3,8 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import './Login.css'; // Подключаем CSS файл
 
+const API_BASE_URL = 'http://localhost:3000';
+
 function Login({ setToken }) {
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
@@ -15,6 +17,8 @@ function Login({ setToken }) {
       const response = await axios.post('/login', {
         login,
         password,
+      }, {
+        baseURL: API_BASE_URL,
       });
       setToken(response.data.token);
       setError('');
@@ -45,6 +49,9 @@ function Login({ setToken }) {
         />
         {error && <p className="login-error">{error}</p>}
         <button type="submit" className="login-button">Войти</button>
+        <p className="login-link">
+          Нет аккаунта? <a href="/register">Зарегистрироваться</a>
+        </p>
       </form>
     </div>
   );

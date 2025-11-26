@@ -8,7 +8,8 @@ const WaterLevel = ({ waterLevel, deviceId }) => {
   const [aerationMode, setAerationMode] = useState(1); // 0: off, 1: auto, 2: on
   const [isSaving, setIsSaving] = useState(false);
 
-  const BASE_URL = 'https://aquaponiks.ru';
+  const BASE_URL = 'http://localhost:3000';
+  // const BASE_URL = 'https://aquaponiks.ru';
   const MODE_FROM_API = { off: 0, auto: 1, on: 2 };
   const MODE_TO_API = { 0: 'off', 1: 'auto', 2: 'on' };
 
