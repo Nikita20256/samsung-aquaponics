@@ -1,5 +1,5 @@
 const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
+const { Pool } = require('pg');
 const mqtt = require('mqtt');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -15,93 +15,35 @@ app.use(express.static('public'));
 app.use(express.json());
 
 // Конфигурация
-const JWT_SECRET = 'supersecretjwttokenblabla'; // Ключ шифрования паролей
-const DEVICES = [
-  {
-    device_id: 'dev1',
-    login: 'device1',
-    password: '123',
-  },
-  {
-    device_id: 'dev2',
-    login: 'device2',
-    password: '456',
-  },
-]; // Пример устройств
+const JWT_SECRET = 'supersecretjwttokenblabla'; // Ключ шифрования токенов
 
-// SQLite подключение
-const db = new sqlite3.Database('aquaponics.db', sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
-  if (err) {
-    console.error(`SQLite error: ${err.message}`);
-    process.exit(1);
-  }
+// PostgreSQL подключение
+const pool = new Pool({
+  host: process.env.DB_HOST || 'localhost',
+  port: process.env.DB_PORT || 5432,
+  database: process.env.DB_NAME || 'aquaponics_db',
+  user: process.env.DB_USER || 'aquaponics_app',
+  password: process.env.DB_PASSWORD || 'aserver',
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
 });
 
-db.run('PRAGMA busy_timeout = 5000');
-db.run('PRAGMA journal_mode = WAL'); 
-
-// Инициализация таблиц
-db.serialize(async () => {
-  db.run(`
-    CREATE TABLE IF NOT EXISTS devices (
-      device_id TEXT PRIMARY KEY,
-      login TEXT UNIQUE NOT NULL,
-      password_hash TEXT NOT NULL
-    )
-  `);
-  db.run(`
-    CREATE TABLE IF NOT EXISTS humidity (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      device_id TEXT NOT NULL,
-      value REAL NOT NULL,
-      timestamp TEXT NOT NULL,
-      FOREIGN KEY (device_id) REFERENCES devices(device_id)
-    )
-  `);
-  db.run(`
-    CREATE TABLE IF NOT EXISTS light (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      device_id TEXT NOT NULL,
-      value REAL NOT NULL,
-      timestamp TEXT NOT NULL,
-      FOREIGN KEY (device_id) REFERENCES devices(device_id)
-    )
-  `);
-  db.run(`
-    CREATE TABLE IF NOT EXISTS temperature (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      device_id TEXT NOT NULL,
-      value REAL NOT NULL,
-      timestamp TEXT NOT NULL,
-      FOREIGN KEY (device_id) REFERENCES devices(device_id)
-    )
-  `);
-  db.run(`
-    CREATE TABLE IF NOT EXISTS light_switches (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      device_id TEXT NOT NULL,
-      count INTEGER NOT NULL DEFAULT 0,
-      last_reset_date TEXT NOT NULL,
-      FOREIGN KEY (device_id) REFERENCES devices(device_id)
-    )
-  `);
-
-  // Вставка устройств в базу с применением шифрования на пароли
-  for (const device of DEVICES) {
-    try {
-      const passwordHash = await bcrypt.hash(device.password, 10);
-      db.run(
-        'INSERT OR IGNORE INTO devices (device_id, login, password_hash) VALUES (?, ?, ?)',
-        [device.device_id, device.login, passwordHash],
-        (err) => {
-          if (err) console.error(`SQLite insert device error: ${err.message}`);
-        }
-      );
-    } catch (err) {
-      console.error(`Bcrypt error for device ${device.device_id}: ${err.message}`);
-    }
-  }
+pool.on('error', (err) => {
+  console.error('Неожиданная ошибка на неактивном клиенте', err);
+  process.exit(-1);
 });
+
+// Простая проверка подключения к БД при старте
+(async () => {
+  try {
+    await pool.query('SELECT NOW()');
+    console.log('PostgreSQL успешно подключен');
+  } catch (err) {
+    console.error(`Ошибка инициализации PostgreSQL: ${err.message}`);
+    console.error('Убедитесь, что PostgreSQL запущен и таблицы созданы согласно схеме');
+  }
+})();
 
 // Буфер для накопления данных за час
 const hourlyBuffer = new Map(); // { deviceId: { humidity: [], light: [], temperature: [] } }
@@ -115,31 +57,30 @@ function addToBuffer(deviceId, sensorType, value) {
 }
 
 // Функция для сохранения усредненных данных за час
-function saveHourlyData() {
-  const now = new Date();
-  const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:00:00`;
-  
-  hourlyBuffer.forEach((sensorData, deviceId) => {
-    ['humidity', 'light', 'temperature'].forEach(sensorType => {
+async function saveHourlyData() {
+  for (const [deviceId, sensorData] of hourlyBuffer.entries()) {
+    for (const sensorType of ['humidity', 'light', 'temperature']) {
       const values = sensorData[sensorType];
       if (values.length > 0) {
         const average = values.reduce((sum, val) => sum + val, 0) / values.length;
         const roundedAverage = Math.round(average * 100) / 100;
         
-        db.run(
-          `INSERT INTO ${sensorType} (device_id, value, timestamp) VALUES (?, ?, ?)`,
-          [deviceId, roundedAverage, timestamp],
-          (err) => {
-            if (err) {
-              console.error(`Error saving hourly ${sensorType} for ${deviceId}: ${err.message}`);
-            } else {
-              console.log(`Saved hourly ${sensorType} for ${deviceId}: ${roundedAverage} (${values.length} samples)`);
-            }
-          }
-        );
+        try {
+          // Используем функцию БД для записи времени получения данных (округлено до часа)
+          const result = await pool.query(
+            `INSERT INTO ${sensorType} (device_id, value, timestamp) 
+             VALUES ($1, $2, date_trunc('hour', NOW() AT TIME ZONE 'UTC')) 
+             RETURNING timestamp`,
+            [deviceId, roundedAverage]
+          );
+          const timestamp = result.rows[0].timestamp;
+          console.log(`Сохранено часовое значение ${sensorType} для ${deviceId}: ${roundedAverage} (${values.length} образцов) в ${timestamp.toISOString()}`);
+        } catch (err) {
+          console.error(`Ошибка при сохранении часового значения ${sensorType} для ${deviceId}: ${err.message}`);
+        }
       }
-    });
-  });
+    }
+  }
   
   // Очищаем буфер после сохранения
   hourlyBuffer.clear();
@@ -159,23 +100,12 @@ function scheduleHourlySave() {
     setInterval(saveHourlyData, 60 * 60 * 1000);
   }, timeToNextHour);
   
-  console.log(`Next hourly save scheduled at ${nextHour.toLocaleString()}`);
+  console.log(`Следующее часовое сохранение запланировано на ${nextHour.toLocaleString()}`);
 }
 
 // Запускаем планировщик
 scheduleHourlySave();
 
-// Форматирование времени для занесения в базу
-function getLocalTimestamp() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  const hours = String(now.getHours()).padStart(2, '0');
-  const minutes = String(now.getMinutes()).padStart(2, '0');
-  const seconds = String(now.getSeconds()).padStart(2, '0');
-  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`; // Формат: 2025-05-14 22:39:37
-}
 
 // Middleware для проверки JWT
 function authenticateToken(req, res, next) {
@@ -183,12 +113,12 @@ function authenticateToken(req, res, next) {
   const token = authHeader && authHeader.split(' ')[1]; 
 
   if (!token) {
-    return res.status(401).json({ error: 'Access token required' });
+    return res.status(401).json({ error: 'Требуется токен доступа' });
   }
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
-      return res.status(403).json({ error: 'Invalid or expired token' });
+      return res.status(403).json({ error: 'Недействительный или истекший токен' });
     }
     req.user = user; // Сохраняем device_id из токена
     next();
@@ -208,12 +138,12 @@ const controlModes = new Map(); // { [deviceId]: { light: 'auto'|'on'|'off', aer
 mqttClient.on('connect', () => {
   mqttClient.subscribe(['aquaponics/+/humidity', 'aquaponics/+/light', 'aquaponics/+/temperature', 'aquaponics/+/water', 'aquaponics/+/VklSvet'], (err) => {
     if (err) {
-      console.error(`MQTT subscribe error: ${err.message}`);
+      console.error(`Ошибка подписки MQTT: ${err.message}`);
     }
   });
 }); //подписка на топики
 
-mqttClient.on('message', (topic, message) => {
+mqttClient.on('message', async (topic, message) => {
   const messageStr = message.toString('utf8').trim(); // Явно указываем кодировку UTF-8 и удаляем пробелы
   //console.log(`Raw message received on topic ${topic}: "${messageStr}"`);
   
@@ -222,7 +152,7 @@ mqttClient.on('message', (topic, message) => {
 
   const topicParts = topic.split('/');
   if (topicParts.length !== 3) {
-    console.error(`Invalid topic format: ${topic}`);
+    console.error(`Неверный формат топика: ${topic}`);
     return;
   }
   const deviceId = topicParts[1];
@@ -236,7 +166,7 @@ mqttClient.on('message', (topic, message) => {
     const waterLevel = Number.isNaN(numeric) ? 0 : (numeric > 0 ? 1 : 0);
 
     // Логируем уровень воды
-    console.log(`Received water level from device ${deviceId}: ${waterLevel}`);
+    console.log(`Получен уровень воды от устройства ${deviceId}: ${waterLevel}`);
 
     // Обновляем последние значения
     if (!latestData.has(deviceId)) {
@@ -253,40 +183,37 @@ mqttClient.on('message', (topic, message) => {
     const numeric = parseInt(digitsOnly, 10);
     if (!Number.isNaN(numeric) && numeric > 0) {
       // Логируем включение света
-      console.log(`Received light switch activation from device ${deviceId}`);
+      console.log(`Получена активация переключателя света от устройства ${deviceId}`);
       
-      const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-      
-      db.get(
-        'SELECT last_reset_date FROM light_switches WHERE device_id = ?',
-        [deviceId],
-        (err, row) => {
-          if (err) {
-            console.error(`SQLite select error (light_switches): ${err.message}`);
-            return;
-          }
-          
-          if (!row) {
-            // Первое включение - создаем запись
-            db.run(
-              'INSERT INTO light_switches (device_id, count, last_reset_date) VALUES (?, 1, ?)',
-              [deviceId, today]
-            );
-          } else if (row.last_reset_date !== today) {
-            // Сброс счетчика если новый день
-            db.run(
-              'UPDATE light_switches SET count = 1, last_reset_date = ? WHERE device_id = ?',
-              [today, deviceId]
-            );
-          } else {
-            // Увеличиваем счетчик
-            db.run(
-              'UPDATE light_switches SET count = count + 1 WHERE device_id = ?',
-              [deviceId]
-            );
-          }
+      try {
+        // Удаляем все записи, которые не за сегодняшний день (автоматический сброс при новом дне)
+        await pool.query(
+          'DELETE FROM light_switches WHERE device_id = $1 AND date != CURRENT_DATE',
+          [deviceId]
+        );
+        
+        // Используем функцию БД для получения текущей даты
+        const result = await pool.query(
+          'SELECT date, count FROM light_switches WHERE device_id = $1 AND date = CURRENT_DATE',
+          [deviceId]
+        );
+        
+        if (result.rows.length === 0) {
+          // Первое включение сегодня - создаем запись
+          await pool.query(
+            'INSERT INTO light_switches (device_id, date, count) VALUES ($1, CURRENT_DATE, 1)',
+            [deviceId]
+          );
+        } else {
+          // Увеличиваем счетчик для сегодняшнего дня
+          await pool.query(
+            'UPDATE light_switches SET count = count + 1 WHERE device_id = $1 AND date = CURRENT_DATE',
+            [deviceId]
+          );
         }
-      );
+      } catch (err) {
+        console.error(`Ошибка PostgreSQL (light_switches): ${err.message}`);
+      }
     }
     return;
   }
@@ -303,18 +230,15 @@ mqttClient.on('message', (topic, message) => {
   //console.log(`Получено значение на тему ${topic}: ${value}`);
 
   // Проверяем, существует ли устройство
-  db.get('SELECT 1 FROM devices WHERE device_id = ?', [deviceId], (err, row) => {
-    if (err) {
-      console.error(`SQLite select error (device): ${err.message}`);
-      return;
-    }
-    if (!row) {
-      console.error(`Unknown device_id: ${deviceId}`);
+  try {
+    const result = await pool.query('SELECT 1 FROM devices WHERE device_id = $1', [deviceId]);
+    if (result.rows.length === 0) {
+      console.error(`Неизвестный device_id: ${deviceId}`);
       return;
     }
 
     // Логируем полученные данные в консольку
-    console.log(`Received ${sensorType} from device ${deviceId}: ${value}`);
+    console.log(`Получено значение ${sensorType} от устройства ${deviceId}: ${value}`);
 
     // Обновляем последние значения
     if (!latestData.has(deviceId)) {
@@ -333,53 +257,158 @@ mqttClient.on('message', (topic, message) => {
       deviceData.temperature = value;
       addToBuffer(deviceId, 'temperature', value);
     }
-  });
+  } catch (err) {
+    console.error(`Ошибка выбора PostgreSQL (device): ${err.message}`);
+  }
 });
 
 mqttClient.on('error', (err) => {
-  console.error(`MQTT error: ${err.message}`);
+  console.error(`Ошибка MQTT: ${err.message}`);
+});
+
+// API для регистрации
+app.post('/register', async (req, res) => {
+  const { login, password, email, device_secret } = req.body;
+  
+  if (!login || !password || !device_secret) {
+    return res.status(400).json({ error: 'Требуются логин, пароль и device_secret' });
+  }
+
+  // Простая валидация логина
+  if (login.length < 3) {
+    return res.status(400).json({ error: 'Логин должен содержать не менее 3 символов' });
+  }
+
+  // Простая валидация пароля
+  if (password.length < 3) {
+    return res.status(400).json({ error: 'Пароль должен содержать не менее 3 символов' });
+  }
+
+  try {
+    // Проверяем, не занят ли логин
+    const existingUser = await pool.query('SELECT user_id FROM users WHERE login = $1', [login]);
+    if (existingUser.rows.length > 0) {
+      return res.status(400).json({ error: 'Логин уже существует' });
+    }
+
+    // Проверяем email, если указан
+    if (email) {
+      const existingEmail = await pool.query('SELECT user_id FROM users WHERE email = $1', [email]);
+      if (existingEmail.rows.length > 0) {
+        return res.status(400).json({ error: 'Email уже существует' });
+      }
+    }
+
+    // Хэшируем пароль
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    // Создаем пользователя
+    const result = await pool.query(
+      'INSERT INTO users (login, password_hash, email) VALUES ($1, $2, $3) RETURNING user_id',
+      [login, passwordHash, email || null]
+    );
+
+    const userId = result.rows[0].user_id;
+
+    // Связывание с устройством по device_secret (пароль устройства) - обязательное поле
+    // Ищем устройство, проверяя пароль через bcrypt
+    const devicesResult = await pool.query('SELECT device_id, device_secret FROM devices');
+    
+    let foundDevice = null;
+    for (const device of devicesResult.rows) {
+      const match = await bcrypt.compare(device_secret, device.device_secret);
+      if (match) {
+        foundDevice = device;
+        break;
+      }
+    }
+
+    if (!foundDevice) {
+      // Устройство не найдено, но пользователь уже создан - удаляем его
+      await pool.query('DELETE FROM users WHERE user_id = $1', [userId]);
+      return res.status(400).json({ error: 'Неверный device_secret' });
+    }
+
+    const deviceId = foundDevice.device_id;
+
+    // Проверяем, не занято ли устройство другим пользователем
+    const deviceCheck = await pool.query(
+      'SELECT user_id FROM user_devices WHERE device_id = $1',
+      [deviceId]
+    );
+
+    if (deviceCheck.rows.length > 0) {
+      // Устройство занято, удаляем созданного пользователя
+      await pool.query('DELETE FROM users WHERE user_id = $1', [userId]);
+      return res.status(400).json({ error: 'Устройство уже связано с другим пользователем' });
+    }
+
+    // Связываем пользователя с устройством
+    await pool.query(
+      'INSERT INTO user_devices (user_id, device_id) VALUES ($1, $2)',
+      [userId, deviceId]
+    );
+
+    res.status(201).json({ message: 'Пользователь успешно зарегистрирован' });
+  } catch (err) {
+    console.error(`Ошибка PostgreSQL (register): ${err.message}`);
+    if (err.code === '23505') { // Unique violation
+      return res.status(400).json({ error: 'Логин или email уже существует' });
+    }
+    return res.status(500).json({ error: 'Ошибка базы данных' });
+  }
 });
 
 // API для аутентификации
 app.post('/login', async (req, res) => {
   const { login, password } = req.body;
   if (!login || !password) {
-    return res.status(400).json({ error: 'login and password are required' });
+    return res.status(400).json({ error: 'Требуются логин и пароль' });
   }
 
-  db.get('SELECT device_id, password_hash FROM devices WHERE login = ?', [login], async (err, row) => {
-    if (err) {
-      console.error(`SQLite select error (login): ${err.message}`);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (!row) {
-      return res.status(401).json({ error: 'Invalid login' });
+  try {
+    // Логиним только пользователей по их логину
+    const userResult = await pool.query('SELECT user_id, password_hash FROM users WHERE login = $1', [login]);
+    if (userResult.rows.length === 0) {
+      return res.status(401).json({ error: 'Неверный логин' });
     }
 
-    try {
-      const match = await bcrypt.compare(password, row.password_hash);
-      if (!match) {
-        return res.status(401).json({ error: 'Invalid password' });
-      }
+    const user = userResult.rows[0];
+    const match = await bcrypt.compare(password, user.password_hash);
 
-      // Создаём JWT-токен
-      const token = jwt.sign({ device_id: row.device_id }, JWT_SECRET, { expiresIn: '24h' }); //время действия 1 час
-      res.json({ token });
-    } catch (err) {
-      console.error(`Bcrypt error: ${err.message}`);
-      res.status(500).json({ error: 'Server error' });
+    if (!match) {
+      return res.status(401).json({ error: 'Неверный пароль' });
     }
-  });
+
+    // Получаем device_id из таблицы user_devices
+    const deviceResult = await pool.query(
+      'SELECT device_id FROM user_devices WHERE user_id = $1 LIMIT 1',
+      [user.user_id]
+    );
+
+    if (deviceResult.rows.length === 0) {
+      return res.status(403).json({ error: 'У пользователя нет связанных устройств' });
+    }
+
+    const device_id = deviceResult.rows[0].device_id;
+    
+    // Создаём JWT-токен с device_id
+    const token = jwt.sign({ device_id: device_id, user_id: user.user_id }, JWT_SECRET, { expiresIn: '24h' });
+    res.json({ token });
+  } catch (err) {
+    console.error(`Ошибка выбора PostgreSQL (login): ${err.message}`);
+    return res.status(500).json({ error: 'Ошибка базы данных' });
+  }
 });
 
 // API для текущих данных (доступ только авторизованным пользователям)
 app.get('/humidity', authenticateToken, (req, res) => {
   const deviceId = req.query.device_id;
   if (!deviceId || deviceId !== req.user.device_id) {
-    return res.status(403).json({ error: 'Unauthorized device access' });
+    return res.status(403).json({ error: 'Несанкционированный доступ к устройству' });
   }
   if (!latestData.has(deviceId)) {
-    return res.status(404).json({ error: 'Device not found' });
+    return res.status(404).json({ error: 'Устройство не найдено' });
   }
   res.json({ humidity: latestData.get(deviceId).humidity });
 });
@@ -387,10 +416,10 @@ app.get('/humidity', authenticateToken, (req, res) => {
 app.get('/lightlevel', authenticateToken, (req, res) => {
   const deviceId = req.query.device_id;
   if (!deviceId || deviceId !== req.user.device_id) {
-    return res.status(403).json({ error: 'Unauthorized device access' });
+    return res.status(403).json({ error: 'Несанкционированный доступ к устройству' });
   }
   if (!latestData.has(deviceId)) {
-    return res.status(404).json({ error: 'Device not found' });
+    return res.status(404).json({ error: 'Устройство не найдено' });
   }
   res.json({ light: latestData.get(deviceId).light });
 });
@@ -399,10 +428,10 @@ app.get('/lightlevel', authenticateToken, (req, res) => {
 app.get('/temperature', authenticateToken, (req, res) => {
   const deviceId = req.query.device_id;
   if (!deviceId || deviceId !== req.user.device_id) {
-    return res.status(403).json({ error: 'Unauthorized device access' });
+    return res.status(403).json({ error: 'Несанкционированный доступ к устройству' });
   }
   if (!latestData.has(deviceId)) {
-    return res.status(404).json({ error: 'Device not found' });
+    return res.status(404).json({ error: 'Устройство не найдено' });
   }
   res.json({ temperature: latestData.get(deviceId).temperature });
 });
@@ -411,10 +440,10 @@ app.get('/temperature', authenticateToken, (req, res) => {
 app.get('/waterlevel', authenticateToken, (req, res) => {
   const deviceId = req.query.device_id;
   if (!deviceId || deviceId !== req.user.device_id) {
-    return res.status(403).json({ error: 'Unauthorized device access' });
+    return res.status(403).json({ error: 'Несанкционированный доступ к устройству' });
   }
   if (!latestData.has(deviceId)) {
-    return res.status(404).json({ error: 'Device not found' });
+    return res.status(404).json({ error: 'Устройство не найдено' });
   }
   res.json({ water: latestData.get(deviceId).water || 0 });
 });
@@ -455,7 +484,7 @@ app.post('/control/light', authenticateToken, (req, res) => {
     return res.status(403).json({ error: 'Unauthorized device access' });
   }
   if (!validateMode(mode)) {
-    return res.status(400).json({ error: 'Invalid mode. Use auto|on|off' });
+    return res.status(400).json({ error: 'Неверный режим. Используйте auto|on|off' });
   }
   const modes = getDeviceModes(deviceId);
   modes.light = mode;
@@ -471,7 +500,7 @@ app.post('/control/aeration', authenticateToken, (req, res) => {
     return res.status(403).json({ error: 'Unauthorized device access' });
   }
   if (!validateMode(mode)) {
-    return res.status(400).json({ error: 'Invalid mode. Use auto|on|off' });
+    return res.status(400).json({ error: 'Неверный режим. Используйте auto|on|off' });
   }
   const modes = getDeviceModes(deviceId);
   modes.aeration = mode;
@@ -480,114 +509,154 @@ app.post('/control/aeration', authenticateToken, (req, res) => {
 });
 
 // API для получения счетчика включений света
-app.get('/lightswitches', authenticateToken, (req, res) => {
+app.get('/lightswitches', authenticateToken, async (req, res) => {
   const deviceId = req.query.device_id;
   if (!deviceId || deviceId !== req.user.device_id) {
     return res.status(403).json({ error: 'Unauthorized device access' });
   }
 
-  db.get(
-    'SELECT count FROM light_switches WHERE device_id = ?',
-    [deviceId],
-    (err, row) => {
-      if (err) {
-        console.error(`SQLite select error (light_switches): ${err.message}`);
-        return res.status(500).json({ error: 'Database error' });
-      }
-      res.json({ count: row ? row.count : 0 });
-    }
-  );
+  try {
+    // Удаляем все записи, которые не за сегодняшний день (автоматический сброс)
+    await pool.query(
+      'DELETE FROM light_switches WHERE device_id = $1 AND date != CURRENT_DATE',
+      [deviceId]
+    );
+    
+    // Используем функцию БД для получения текущей даты
+    // Если записи нет, автоматически возвращаем 0 (новый день = счетчик сброшен)
+    const result = await pool.query(
+      'SELECT count FROM light_switches WHERE device_id = $1 AND date = CURRENT_DATE',
+      [deviceId]
+    );
+    res.json({ count: result.rows.length > 0 ? result.rows[0].count : 0 });
+  } catch (err) {
+    console.error(`Ошибка выбора PostgreSQL (light_switches): ${err.message}`);
+    return res.status(500).json({ error: 'Ошибка базы данных' });
+  }
 });
 
 // API графика
-app.get('/data/humidity', authenticateToken, (req, res) => {
+app.get('/data/humidity', authenticateToken, async (req, res) => {
   const { device_id, start, end, limit, timezone } = req.query;
   if (!device_id || device_id !== req.user.device_id) {
     return res.status(403).json({ error: 'Unauthorized device access' });
   }
   const queryLimit = parseInt(limit) || 100;
-  const startTime = start ? start : new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ');
-  const endTime = end ? end : new Date().toISOString().slice(0, 19).replace('T', ' ');
+  // Преобразуем ISO строки в формат для PostgreSQL
+  const startTime = start 
+    ? new Date(start).toISOString().slice(0, 19).replace('T', ' ')
+    : new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ');
+  const endTime = end 
+    ? new Date(end).toISOString().slice(0, 19).replace('T', ' ')
+    : new Date().toISOString().slice(0, 19).replace('T', ' ');
 
-  const format = timezone === 'utc' ? `strftime('%Y-%m-%d %H:%M:%S', datetime(timestamp, '-3 hours'))` : `timestamp`;
-  db.all(
-    `SELECT value, ${format} as timestamp 
-     FROM humidity 
-     WHERE device_id = ? AND timestamp BETWEEN ? AND ? 
-     ORDER BY timestamp ASC LIMIT ?`,
-    [device_id, startTime, endTime, queryLimit],
-    (err, rows) => {
-      if (err) {
-        console.error(`SQLite select error (humidity): ${err.message}`);
-        return res.status(500).json({ error: 'Database error' });
-      }
-      res.json(rows);
-    }
-  );
+  try {
+    // Преобразуем ISO строки в timestamp для PostgreSQL
+    const startDate = start ? new Date(start) : new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const endDate = end ? new Date(end) : new Date();
+    const startTimeUTC = startDate.toISOString();
+    const endTimeUTC = endDate.toISOString();
+    
+    console.log(`[humidity] Запрос: device_id=${device_id}, startTime=${startTimeUTC}, endTime=${endTimeUTC}`);
+    // Возвращаем timestamp в формате ISO (UTC), фронтенд преобразует в локальное время
+    const result = await pool.query(
+      `SELECT value, timestamp AT TIME ZONE 'UTC' as timestamp 
+       FROM humidity 
+       WHERE device_id = $1 AND timestamp BETWEEN $2::timestamptz AND $3::timestamptz 
+       ORDER BY timestamp ASC LIMIT $4`,
+      [device_id, startTimeUTC, endTimeUTC, queryLimit]
+    );
+    console.log(`[humidity] Найдено ${result.rows.length} записей`);
+    // PostgreSQL автоматически преобразует timestamp в ISO формат при сериализации JSON
+    const rows = result.rows.map(row => ({
+      value: row.value,
+      timestamp: row.timestamp.toISOString()
+    }));
+    res.json(rows);
+  } catch (err) {
+    console.error(`Ошибка выбора PostgreSQL (humidity): ${err.message}`);
+    return res.status(500).json({ error: 'Ошибка базы данных' });
+  }
 });
 
-app.get('/data/light', authenticateToken, (req, res) => {
+app.get('/data/light', authenticateToken, async (req, res) => {
   const { device_id, start, end, limit, timezone } = req.query;
   if (!device_id || device_id !== req.user.device_id) {
     return res.status(403).json({ error: 'Unauthorized device access' });
   }
   const queryLimit = parseInt(limit) || 100;
-  const startTime = start ? start : new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ');
-  const endTime = end ? end : new Date().toISOString().slice(0, 19).replace('T', ' ');
 
-  const format = timezone === 'utc' ? `strftime('%Y-%m-%d %H:%M:%S', datetime(timestamp, '-3 hours'))` : `timestamp`;
-  db.all(
-    `SELECT value, ${format} as timestamp 
-     FROM light 
-     WHERE device_id = ? AND timestamp BETWEEN ? AND ? 
-     ORDER BY timestamp ASC LIMIT ?`,
-    [device_id, startTime, endTime, queryLimit],
-    (err, rows) => {
-      if (err) {
-        console.error(`SQLite select error (light): ${err.message}`);
-        return res.status(500).json({ error: 'Database error' });
-      }
-      res.json(rows);
-    }
-  );
+  try {
+    // Преобразуем ISO строки в timestamp для PostgreSQL
+    const startDate = start ? new Date(start) : new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const endDate = end ? new Date(end) : new Date();
+    const startTimeUTC = startDate.toISOString();
+    const endTimeUTC = endDate.toISOString();
+    
+    // Возвращаем timestamp в формате ISO (UTC), фронтенд преобразует в локальное время
+    const result = await pool.query(
+      `SELECT value, timestamp AT TIME ZONE 'UTC' as timestamp 
+       FROM light 
+       WHERE device_id = $1 AND timestamp BETWEEN $2::timestamptz AND $3::timestamptz 
+       ORDER BY timestamp ASC LIMIT $4`,
+      [device_id, startTimeUTC, endTimeUTC, queryLimit]
+    );
+    // PostgreSQL автоматически преобразует timestamp в ISO формат при сериализации JSON
+    const rows = result.rows.map(row => ({
+      value: row.value,
+      timestamp: row.timestamp.toISOString()
+    }));
+    res.json(rows);
+  } catch (err) {
+    console.error(`Ошибка выбора PostgreSQL (light): ${err.message}`);
+    return res.status(500).json({ error: 'Ошибка базы данных' });
+  }
 });
 
 // История температуры
-app.get('/data/temperature', authenticateToken, (req, res) => {
+app.get('/data/temperature', authenticateToken, async (req, res) => {
   const { device_id, start, end, limit, timezone } = req.query;
   if (!device_id || device_id !== req.user.device_id) {
     return res.status(403).json({ error: 'Unauthorized device access' });
   }
   const queryLimit = parseInt(limit) || 100;
-  const startTime = start ? start : new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ');
-  const endTime = end ? end : new Date().toISOString().slice(0, 19).replace('T', ' ');
 
-  const format = timezone === 'utc' ? `strftime('%Y-%m-%d %H:%M:%S', datetime(timestamp, '-3 hours'))` : `timestamp`;
-  db.all(
-    `SELECT value, ${format} as timestamp 
-     FROM temperature 
-     WHERE device_id = ? AND timestamp BETWEEN ? AND ? 
-     ORDER BY timestamp ASC LIMIT ?`,
-    [device_id, startTime, endTime, queryLimit],
-    (err, rows) => {
-      if (err) {
-        console.error(`SQLite select error (temperature): ${err.message}`);
-        return res.status(500).json({ error: 'Database error' });
-      }
-      res.json(rows);
-    }
-  );
+  try {
+    // Преобразуем ISO строки в timestamp для PostgreSQL
+    const startDate = start ? new Date(start) : new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const endDate = end ? new Date(end) : new Date();
+    const startTimeUTC = startDate.toISOString();
+    const endTimeUTC = endDate.toISOString();
+    
+    // Возвращаем timestamp в формате ISO (UTC), фронтенд преобразует в локальное время
+    const result = await pool.query(
+      `SELECT value, timestamp AT TIME ZONE 'UTC' as timestamp 
+       FROM temperature 
+       WHERE device_id = $1 AND timestamp BETWEEN $2::timestamptz AND $3::timestamptz 
+       ORDER BY timestamp ASC LIMIT $4`,
+      [device_id, startTimeUTC, endTimeUTC, queryLimit]
+    );
+    // PostgreSQL автоматически преобразует timestamp в ISO формат при сериализации JSON
+    const rows = result.rows.map(row => ({
+      value: row.value,
+      timestamp: row.timestamp.toISOString()
+    }));
+    res.json(rows);
+  } catch (err) {
+    console.error(`Ошибка выбора PostgreSQL (temperature): ${err.message}`);
+    return res.status(500).json({ error: 'Ошибка базы данных' });
+  }
 });
 
 // API для получения списка устройств (в будующем, если у одного пользователя несколько устройств)
-app.get('/devices', authenticateToken, (req, res) => {
-  db.all('SELECT device_id FROM devices WHERE device_id = ?', [req.user.device_id], (err, rows) => {
-    if (err) {
-      console.error(`SQLite select error (devices): ${err.message}`);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    res.json({ devices: rows.map(row => row.device_id) });
-  });
+app.get('/devices', authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query('SELECT device_id FROM devices WHERE device_id = $1', [req.user.device_id]);
+    res.json({ devices: result.rows.map(row => row.device_id) });
+  } catch (err) {
+    console.error(`Ошибка выбора PostgreSQL (devices): ${err.message}`);
+    return res.status(500).json({ error: 'Ошибка базы данных' });
+  }
 });
 
 app.get('/user/device', authenticateToken, (req, res) => {
@@ -597,30 +666,26 @@ app.get('/user/device', authenticateToken, (req, res) => {
 
 // Запуск сервера
 const server = app.listen(3000, '0.0.0.0', () => {
-  console.log('Server running on http://0.0.0.0:3000');
+  console.log('Сервер запущен на http://0.0.0.0:3000');
 });
 
 // мягкое отключение сервера
-process.on('SIGTERM', () => {
-  console.log('Received SIGTERM. Shutting down gracefully...');
-  server.close(() => {
-    db.close((err) => {
-      if (err) console.error(`Error closing SQLite: ${err.message}`);
-      mqttClient.end();
-      console.log('Server stopped');
-      process.exit(0);
-    });
+process.on('SIGTERM', async () => {
+  console.log('Получен SIGTERM. Корректное завершение работы...');
+  server.close(async () => {
+    await pool.end();
+    mqttClient.end();
+    console.log('Сервер остановлен');
+    process.exit(0);
   });
 });
 
-process.on('SIGINT', () => {
-  console.log('Received SIGINT. Shutting down gracefully...');
-  server.close(() => {
-    db.close((err) => {
-      if (err) console.error(`Error closing SQLite: ${err.message}`);
-      mqttClient.end();
-      console.log('Server stopped');
-      process.exit(0);
-    });
+process.on('SIGINT', async () => {
+  console.log('Получен SIGINT. Корректное завершение работы...');
+  server.close(async () => {
+    await pool.end();
+    mqttClient.end();
+    console.log('Сервер остановлен');
+    process.exit(0);
   });
 });
