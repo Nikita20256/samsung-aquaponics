@@ -267,7 +267,7 @@ mqttClient.on('error', (err) => {
 });
 
 // API для регистрации
-app.post('/register', async (req, res) => {
+app.post('/api/register', async (req, res) => {
   const { login, password, email, device_secret } = req.body;
   
   if (!login || !password || !device_secret) {
@@ -360,7 +360,7 @@ app.post('/register', async (req, res) => {
 });
 
 // API для аутентификации
-app.post('/login', async (req, res) => {
+app.post('/api/login', async (req, res) => {
   const { login, password } = req.body;
   if (!login || !password) {
     return res.status(400).json({ error: 'Требуются логин и пароль' });
@@ -402,7 +402,7 @@ app.post('/login', async (req, res) => {
 });
 
 // API для текущих данных (доступ только авторизованным пользователям)
-app.get('/humidity', authenticateToken, (req, res) => {
+app.get('/api/humidity', authenticateToken, (req, res) => {
   const deviceId = req.query.device_id;
   if (!deviceId || deviceId !== req.user.device_id) {
     return res.status(403).json({ error: 'Несанкционированный доступ к устройству' });
@@ -413,7 +413,7 @@ app.get('/humidity', authenticateToken, (req, res) => {
   res.json({ humidity: latestData.get(deviceId).humidity });
 });
 
-app.get('/lightlevel', authenticateToken, (req, res) => {
+app.get('/api/lightlevel', authenticateToken, (req, res) => {
   const deviceId = req.query.device_id;
   if (!deviceId || deviceId !== req.user.device_id) {
     return res.status(403).json({ error: 'Несанкционированный доступ к устройству' });
@@ -425,7 +425,7 @@ app.get('/lightlevel', authenticateToken, (req, res) => {
 });
 
 // Текущая температура
-app.get('/temperature', authenticateToken, (req, res) => {
+app.get('/api/temperature', authenticateToken, (req, res) => {
   const deviceId = req.query.device_id;
   if (!deviceId || deviceId !== req.user.device_id) {
     return res.status(403).json({ error: 'Несанкционированный доступ к устройству' });
@@ -437,7 +437,7 @@ app.get('/temperature', authenticateToken, (req, res) => {
 });
 
 // API для получения статуса воды
-app.get('/waterlevel', authenticateToken, (req, res) => {
+app.get('/api/waterlevel', authenticateToken, (req, res) => {
   const deviceId = req.query.device_id;
   if (!deviceId || deviceId !== req.user.device_id) {
     return res.status(403).json({ error: 'Несанкционированный доступ к устройству' });
@@ -467,7 +467,7 @@ function publishControl(deviceId, target, mode) {
 }
 
 // GET текущие режимы
-app.get('/control/modes', authenticateToken, (req, res) => {
+app.get('/api/control/modes', authenticateToken, (req, res) => {
   const deviceId = req.query.device_id;
   if (!deviceId || deviceId !== req.user.device_id) {
     return res.status(403).json({ error: 'Unauthorized device access' });
@@ -493,7 +493,7 @@ app.post('/control/light', authenticateToken, (req, res) => {
 });
 
 // SET режим аэрации
-app.post('/control/aeration', authenticateToken, (req, res) => {
+app.post('/api/control/aeration', authenticateToken, (req, res) => {
   const deviceId = req.query.device_id;
   const { mode } = req.body;
   if (!deviceId || deviceId !== req.user.device_id) {
@@ -509,7 +509,7 @@ app.post('/control/aeration', authenticateToken, (req, res) => {
 });
 
 // API для получения счетчика включений света
-app.get('/lightswitches', authenticateToken, async (req, res) => {
+app.get('/api/lightswitches', authenticateToken, async (req, res) => {
   const deviceId = req.query.device_id;
   if (!deviceId || deviceId !== req.user.device_id) {
     return res.status(403).json({ error: 'Unauthorized device access' });
@@ -536,7 +536,7 @@ app.get('/lightswitches', authenticateToken, async (req, res) => {
 });
 
 // API графика
-app.get('/data/humidity', authenticateToken, async (req, res) => {
+app.get('/api/data/humidity', authenticateToken, async (req, res) => {
   const { device_id, start, end, limit, timezone } = req.query;
   if (!device_id || device_id !== req.user.device_id) {
     return res.status(403).json({ error: 'Unauthorized device access' });
@@ -579,7 +579,7 @@ app.get('/data/humidity', authenticateToken, async (req, res) => {
   }
 });
 
-app.get('/data/light', authenticateToken, async (req, res) => {
+app.get('/api/data/light', authenticateToken, async (req, res) => {
   const { device_id, start, end, limit, timezone } = req.query;
   if (!device_id || device_id !== req.user.device_id) {
     return res.status(403).json({ error: 'Unauthorized device access' });
@@ -614,7 +614,7 @@ app.get('/data/light', authenticateToken, async (req, res) => {
 });
 
 // История температуры
-app.get('/data/temperature', authenticateToken, async (req, res) => {
+app.get('/api/data/temperature', authenticateToken, async (req, res) => {
   const { device_id, start, end, limit, timezone } = req.query;
   if (!device_id || device_id !== req.user.device_id) {
     return res.status(403).json({ error: 'Unauthorized device access' });
@@ -649,7 +649,7 @@ app.get('/data/temperature', authenticateToken, async (req, res) => {
 });
 
 // API для получения списка устройств (в будующем, если у одного пользователя несколько устройств)
-app.get('/devices', authenticateToken, async (req, res) => {
+app.get('/api/devices', authenticateToken, async (req, res) => {
   try {
     const result = await pool.query('SELECT device_id FROM devices WHERE device_id = $1', [req.user.device_id]);
     res.json({ devices: result.rows.map(row => row.device_id) });
@@ -659,7 +659,7 @@ app.get('/devices', authenticateToken, async (req, res) => {
   }
 });
 
-app.get('/user/device', authenticateToken, (req, res) => {
+app.get('/api/user/device', authenticateToken, (req, res) => {
   // извлечение device_id
   res.json({ device_id: req.user.device_id });
 });
