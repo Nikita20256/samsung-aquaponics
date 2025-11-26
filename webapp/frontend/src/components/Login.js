@@ -3,7 +3,8 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import './Login.css'; // Подключаем CSS файл
 
-const API_BASE_URL = 'http://localhost:3000';
+const API_BASE_URL = 'http://localhost:3000/api';
+//const API_BASE_URL = 'https://aquaponiks.ru/api';
 
 function Login({ setToken }) {
   const [login, setLogin] = useState('');

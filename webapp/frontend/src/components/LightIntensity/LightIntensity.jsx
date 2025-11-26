@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import './LightIntensity.css';
 
-const BASE_URL = 'http://localhost:3000';
-// const BASE_URL = 'https://aquaponiks.ru';
+const BASE_URL = 'http://localhost:3000/api';
+// const BASE_URL = 'https://aquaponiks.ru/api';
 const MODE_FROM_API = { off: 0, auto: 1, on: 2 };
 const MODE_TO_API = { 0: 'off', 1: 'auto', 2: 'on' };
 
