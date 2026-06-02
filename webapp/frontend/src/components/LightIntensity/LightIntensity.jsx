@@ -1,161 +1,128 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import React, { useMemo } from 'react';
 import './LightIntensity.css';
 
-const BASE_URL = 'http://localhost:3000/api';
-// const BASE_URL = 'https://aquaponiks.ru/api';
-const MODE_FROM_API = { off: 0, auto: 1, on: 2 };
-const MODE_TO_API = { 0: 'off', 1: 'auto', 2: 'on' };
+const LightIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="#F0A830" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="5" />
+    <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+  </svg>
+);
 
-const LightIntensity = ({ lightLevel, lightSwitches, deviceId }) => {
-  const [lightMode, setLightMode] = useState(1); // 0: off, 1: auto, 2: on
-  const [isSaving, setIsSaving] = useState(false);
+const LightIntensity = ({ lightLevel }) => {
+  const status = useMemo(() => {
+    if (lightLevel === null || lightLevel === undefined) {
+      return { text: 'Нет данных', color: '#718096', bg: 'rgba(237,242,247,0.8)' };
+    }
+    if (lightLevel < 200) return { text: 'Темно', color: '#4A5568', bg: 'rgba(226,232,240,0.85)' };
+    if (lightLevel < 400) return { text: 'Сумерки', color: '#5a6c5a', bg: 'rgba(232,245,233,0.85)' };
+    if (lightLevel <= 800) return { text: 'Комфортно', color: '#2F855A', bg: 'rgba(240,255,244,0.85)' };
+    return { text: 'Ярко', color: '#D97706', bg: 'rgba(255,251,235,0.85)' };
+  }, [lightLevel]);
 
-  // Упрощенная цветовая палитра
-  const colors = {
-    dark: '#3A5C40',    // Темнота
-    medium: '#7CB45D',  // Средний уровень
-    bright: '#F0A830',  // Яркий свет
-    textDark: '#1E3B23'
-  };
+  const percent = useMemo(() => {
+    if (lightLevel === null || lightLevel === undefined) return 0;
+    return Math.max(2, Math.min(100, (lightLevel / 1000) * 100));
+  }, [lightLevel]);
 
-  const lightConfig = [
-    { label: 'Выкл', value: 0, color: '#E53E3E' },
-    { label: 'Авто', value: 1, color: '#3182CE' },
-    { label: 'Вкл', value: 2, color: '#38A169' }
-  ];
+  const sunColor = useMemo(() => {
+    if (lightLevel === null) return '#A0AEC0';
+    if (lightLevel < 200) return '#718096';
+    if (lightLevel < 400) return '#48BB78';
+    if (lightLevel <= 800) return '#F0A830';
+    return '#F6AD55';
+  }, [lightLevel]);
 
-  const getLightColor = (light) => {
-    if (light === null) return colors.textDark;
-    if (light < 400) return colors.dark;
-    if (light <= 800) return colors.medium;
-    return colors.bright;
-  };
-
-  const getPercentage = (light) => {
-    if (!light) return 0;
-    return Math.min(100, (light / 1000) * 100); // Максимум 1000 для шкалы
-  };
-
-  // Функция для переключения режима освещения
-  const handleLightModeChange = (value) => {
-    if (!deviceId || isSaving) return;
-    const prev = lightMode;
-    const modeStr = MODE_TO_API[value] || 'auto';
-    setLightMode(value);
-    setIsSaving(true);
-    axios.post(
-      '/control/light',
-      { mode: modeStr },
-      {
-        baseURL: BASE_URL,
-        params: { device_id: deviceId },
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      }
-    ).catch((err) => {
-      console.error('Не удалось установить режим света:', err);
-      setLightMode(prev);
-    }).finally(() => setIsSaving(false));
-  };
-
-  // Загрузка текущего режима с бэка
-  useEffect(() => {
-    if (!deviceId) return;
-    let cancelled = false;
-    axios.get('/control/modes', {
-      baseURL: BASE_URL,
-      params: { device_id: deviceId },
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    }).then((res) => {
-      if (cancelled) return;
-      const apiMode = res.data?.light;
-      if (apiMode && apiMode in MODE_FROM_API) {
-        setLightMode(MODE_FROM_API[apiMode]);
-      }
-    }).catch((err) => {
-      console.error('Не удалось получить режимы управления:', err);
-    });
-    return () => { cancelled = true; };
-  }, [deviceId]);
+  // SVG ring progress
+  const R = 42;
+  const CIRC = 2 * Math.PI * R;
+  const offset = CIRC * (1 - percent / 100);
 
   return (
     <div className="light-card">
       <div className="light-header">
-        <h1 className="light-title">
-          <span className="icon">🌿</span> Освещенность аквапоники
-        </h1>
-        <div className="light-icons">
-          <span className="icon">🌲</span>
-        </div>
+        <LightIcon />
+        <h3 className="light-title">Освещенность</h3>
       </div>
 
-      <div className="light-display">
-        <div className="light-value" style={{ color: getLightColor(lightLevel) }}>
-          {lightLevel !== null ? lightLevel.toLocaleString() : '--'}
-          <span className="light-unit">lux</span>
-        </div>
-        <div className="light-scale">
-          <span style={{ color: colors.dark }}>0</span>
-          <div className="scale-bar">
-            <div 
-              className="scale-progress" 
-              style={{
-                width: `${getPercentage(lightLevel)}%`,
-                backgroundColor: getLightColor(lightLevel)
-              }}
+      <div className="light-body">
+        <div className="sun-gauge-wrap">
+          <svg viewBox="0 0 100 100" className="sun-svg">
+            <defs>
+              <linearGradient id="sun-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor={sunColor} stopOpacity="0.9" />
+                <stop offset="100%" stopColor={sunColor} stopOpacity="0.4" />
+              </linearGradient>
+              <filter id="sun-glow">
+                <feGaussianBlur stdDeviation="2" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+
+            {/* Фоновое кольцо */}
+            <circle
+              cx="50" cy="50" r={R}
+              fill="none"
+              stroke="rgba(255,255,255,0.35)"
+              strokeWidth="6"
+              strokeLinecap="round"
             />
+
+            {/* Прогресс */}
+            <circle
+              cx="50" cy="50" r={R}
+              fill="none"
+              stroke="url(#sun-grad)"
+              strokeWidth="6"
+              strokeLinecap="round"
+              strokeDasharray={CIRC}
+              strokeDashoffset={offset}
+              style={{ transition: 'stroke-dashoffset 1s ease-out, stroke 0.5s ease' }}
+              transform="rotate(-90 50 50)"
+              filter="url(#sun-glow)"
+            />
+
+            {/* Солнце в центре */}
+            <g filter="url(#sun-glow)">
+              <circle cx="50" cy="50" r="14" fill={sunColor} opacity="0.9" />
+              {/* Лучи */}
+              {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => {
+                const rad = (deg * Math.PI) / 180;
+                const x1 = 50 + 20 * Math.cos(rad);
+                const y1 = 50 + 20 * Math.sin(rad);
+                const x2 = 50 + 28 * Math.cos(rad);
+                const y2 = 50 + 28 * Math.sin(rad);
+                return (
+                  <line
+                    key={deg}
+                    x1={x1} y1={y1}
+                    x2={x2} y2={y2}
+                    stroke={sunColor}
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    opacity="0.8"
+                  />
+                );
+              })}
+            </g>
+          </svg>
+
+          <div className="light-value-overlay">
+            <span className="light-value" style={{ color: sunColor }}>
+              {lightLevel !== null ? Math.round(lightLevel) : '--'}
+            </span>
+            <span className="light-unit">lux</span>
           </div>
-          <span style={{ color: colors.bright }}>1k</span>
         </div>
       </div>
 
-      {/* Блок с переключателем режима освещения */}
-      <div className="light-control">
-        <div className="light-control-label">Режим света</div>
-        <div className="switch-selector">
-          {lightConfig.map((mode, index) => (
-            <button
-              key={mode.value}
-              className={`switch-option ${lightMode === mode.value ? 'active' : ''}`}
-              onClick={() => handleLightModeChange(mode.value)}
-              style={{
-                backgroundColor: lightMode === mode.value ? mode.color : 'transparent',
-                color: lightMode === mode.value ? 'white' : '#4A5568'
-              }}
-            >
-              {mode.label}
-            </button>
-          ))}
-          <div 
-            className="switch-slider"
-            style={{
-              transform: `translateX(${lightMode * 100}%)`,
-              backgroundColor: lightConfig[lightMode].color
-            }}
-          />
-        </div>
-      </div>
-
-      {/* Блок с счетчиком включений */}
-      <div className="light-display-count">
-        <div className="count-title">Включений света сегодня:</div>
-        <div className="count-value">
-          {lightSwitches !== null ? lightSwitches : '--'}
-        </div>
-      </div>
-
-      <div className="light-footer">
-        {lightLevel !== null && (
-          <div className="status-message">
-            {lightLevel < 400 ? (
-              <>🌑 Темно (ниже 400 lux)</>
-            ) : lightLevel <= 800 ? (
-              <>🌥️ Средне (400-800 lux)</>
-            ) : (
-              <>☀️ Светло (выше 800 lux)</>
-            )}
-          </div>
-        )}
+      <div
+        className="light-status"
+        style={{ backgroundColor: status.bg, color: status.color }}
+      >
+        {status.text}
       </div>
     </div>
   );

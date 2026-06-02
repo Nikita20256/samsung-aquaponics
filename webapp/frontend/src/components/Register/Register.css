@@ -1,0 +1,249 @@
+.register-page {
+  min-height: 100vh;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  background-color: #0F2925;
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.register-left {
+  flex: 0 0 55%;
+  width: 55%;
+  position: relative;
+  overflow: hidden;
+  height: 100vh;
+}
+
+.register-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: left center;
+  z-index: 1;
+}
+
+.register-bg-image {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 95%;
+  height: 100%;
+  object-fit: contain;
+  object-position: left bottom;
+  z-index: 2;
+}
+
+.register-right {
+  flex: 0 0 45%;
+  width: 45%;
+  height: 100vh;
+  background-color: #0F2925;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.register-form {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 450px;
+  z-index: 3;
+  position: relative;
+}
+
+.register-title {
+  color: #adff2f;
+  font-size: 1.8rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.register-label {
+  color: #adff2f;
+  font-family: 'Calypso', sans-serif;
+  font-size: 48px;
+  font-weight: 400;
+  line-height: 100%;
+  letter-spacing: 0%;
+  text-align: left;
+  margin-bottom: 0.4rem;
+  width: 100%;
+}
+
+.register-label-device {
+  white-space: nowrap;
+}
+
+.register-input {
+  background-color: #D4FAF4;
+  border: none;
+  border-radius: 12px;
+  padding: 0.7rem 1rem;
+  font-size: 1rem;
+  margin-bottom: 1.2rem;
+  outline: none;
+  width: 100%;
+  height: 38px;
+  color: #1a4d3a;
+  box-sizing: border-box;
+}
+
+.register-input::placeholder {
+  color: rgba(26, 77, 58, 0.5);
+}
+
+.register-input:focus {
+  background-color: #D4FAF4;
+  box-shadow: 0 0 0 2px rgba(173, 255, 47, 0.3);
+}
+
+.register-button {
+  background-color: #176040;
+  color: white;
+  padding: 0.7rem 1.3rem;
+  border: none;
+  border-radius: 12px;
+  font-family: 'Calypso', sans-serif;
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 100%;
+  letter-spacing: 0%;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s;
+  margin-top: 0.5rem;
+  margin-left: auto;
+  margin-right: auto;
+  width: fit-content;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.register-button:hover {
+  background-color: #145b35;
+  transform: translateY(-2px);
+  box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.4);
+}
+
+.register-error {
+  color: #ff6b6b;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  text-align: center;
+  width: 100%;
+}
+
+.register-success {
+  color: #51cf66;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  text-align: center;
+  width: 100%;
+}
+
+.register-link {
+  color: #adff2f;
+  font-size: 0.9rem;
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.register-link a {
+  color: #adff2f;
+  text-decoration: underline;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.register-link a:hover {
+  color: #9acd32;
+}
+
+.register-hint {
+  color: #adff2b;
+  font-size: 0.8rem;
+  margin-top: -1rem;
+  margin-bottom: 1rem;
+  text-align: center;
+  opacity: 0.7;
+}
+
+/* Адаптивность: мобильные экраны */
+@media (max-width: 900px) {
+  .register-page {
+    flex-direction: column;
+  }
+
+  .register-left {
+    display: none;
+  }
+
+  .register-right {
+    flex: 1 1 100%;
+    width: 100%;
+    height: 100vh;
+    padding: 1.5rem;
+  }
+
+  .register-form {
+    max-width: 400px;
+  }
+
+  .register-label {
+    font-size: 36px;
+  }
+
+  .register-button {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .register-right {
+    padding: 1rem;
+  }
+
+  .register-form {
+    max-width: 100%;
+    padding: 0 0.5rem;
+  }
+
+  .register-label {
+    font-size: 28px;
+  }
+
+  .register-label-device {
+    white-space: normal;
+  }
+
+  .register-input {
+    padding: 0.6rem 0.8rem;
+    font-size: 0.95rem;
+    height: 36px;
+    margin-bottom: 1rem;
+  }
+
+  .register-button {
+    font-size: 18px;
+    padding: 0.6rem 1.2rem;
+  }
+}

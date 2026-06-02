@@ -1,0 +1,185 @@
+.cycle-card {
+  width: 270px;
+  height: 410px;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow:
+    0 8px 30px rgba(13, 138, 98, 0.25),
+    0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: all 0.4s ease;
+  cursor: default;
+  border: none;
+  position: relative;
+}
+
+.cycle-card:hover {
+  transform: translateY(-6px);
+  box-shadow:
+    0 15px 40px rgba(13, 138, 98, 0.35),
+    0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.cycle-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ─── Стебель растёт ─── */
+.stem {
+  stroke-dasharray: 155;
+  stroke-dashoffset: 155;
+  animation: growStem 6s ease-in-out infinite;
+}
+
+@keyframes growStem {
+  0%, 10% {
+    stroke-dashoffset: 155;
+  }
+  40%, 85% {
+    stroke-dashoffset: 0;
+  }
+  95%, 100% {
+    stroke-dashoffset: 155;
+  }
+}
+
+/* ─── Листья появляются ─── */
+.leaf {
+  opacity: 0;
+  transform-origin: 135px 210px;
+  animation: leafAppear 6s ease-in-out infinite;
+}
+
+.leaf-1  { animation-delay: 0.8s; }
+.leaf-1-r { animation-delay: 1.0s; }
+.leaf-2  { animation-delay: 1.5s; }
+.leaf-2-r { animation-delay: 1.7s; }
+.leaf-3  { animation-delay: 2.2s; }
+.leaf-3-r { animation-delay: 2.4s; }
+.leaf-4  { animation-delay: 2.9s; }
+.leaf-4-r { animation-delay: 3.1s; }
+
+@keyframes leafAppear {
+  0%, 15% {
+    opacity: 0;
+    transform: scale(0) rotate(0deg);
+  }
+  30%, 80% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+  92%, 100% {
+    opacity: 0;
+    transform: scale(0.5) rotate(5deg);
+  }
+}
+
+/* ─── Цветок распускается ─── */
+.flower {
+  opacity: 0;
+  transform-origin: 135px 65px;
+  animation: flowerBloom 6s ease-in-out infinite;
+  animation-delay: 3.5s;
+}
+
+@keyframes flowerBloom {
+  0%, 15% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  35%, 75% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  90%, 100% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+}
+
+/* ─── Рыбки плавают ─── */
+.fish-1 {
+  animation: fishSwim1 10s ease-in-out infinite;
+}
+
+.fish-2 {
+  animation: fishSwim2 12s ease-in-out infinite;
+}
+
+.fish-3 {
+  animation: fishSwim3 9s ease-in-out infinite;
+}
+
+@keyframes fishSwim1 {
+  0%, 100% { transform: translateX(0) translateY(0); }
+  20% { transform: translateX(25px) translateY(-6px); }
+  40% { transform: translateX(-15px) translateY(4px); }
+  60% { transform: translateX(35px) translateY(-3px); }
+  80% { transform: translateX(-20px) translateY(5px); }
+}
+
+@keyframes fishSwim2 {
+  0%, 100% { transform: translateX(0) translateY(0); }
+  25% { transform: translateX(40px) translateY(5px); }
+  50% { transform: translateX(-10px) translateY(-4px); }
+  75% { transform: translateX(30px) translateY(3px); }
+}
+
+@keyframes fishSwim3 {
+  0%, 100% { transform: translateX(0) translateY(0); }
+  30% { transform: translateX(-30px) translateY(-5px); }
+  60% { transform: translateX(20px) translateY(3px); }
+}
+
+/* ─── Пузырьки поднимаются ─── */
+.bubble {
+  animation: bubbleRise 4s ease-in infinite;
+  transform-origin: center;
+}
+
+.b1 { animation-delay: 0s; animation-duration: 4.2s; }
+.b2 { animation-delay: 0.6s; animation-duration: 3.5s; }
+.b3 { animation-delay: 1.2s; animation-duration: 4.8s; }
+.b4 { animation-delay: 1.8s; animation-duration: 3.8s; }
+.b5 { animation-delay: 2.4s; animation-duration: 4.5s; }
+.b6 { animation-delay: 0.3s; animation-duration: 3.2s; }
+.b7 { animation-delay: 1.5s; animation-duration: 4s; }
+
+@keyframes bubbleRise {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 0.4;
+  }
+  30% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-90px) scale(0.3);
+    opacity: 0;
+  }
+}
+
+/* ─── Корни слегка колышутся ─── */
+.root {
+  animation: rootSway 4s ease-in-out infinite;
+  transform-origin: top;
+}
+
+.root:nth-child(2) { animation-delay: 0.5s; }
+.root:nth-child(3) { animation-delay: 1s; }
+
+@keyframes rootSway {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(1.5deg); }
+}
+
+/* Адаптив */
+@media (max-width: 480px) {
+  .cycle-card {
+    width: 100%;
+    max-width: 320px;
+    height: auto;
+    aspect-ratio: 270 / 410;
+  }
+}

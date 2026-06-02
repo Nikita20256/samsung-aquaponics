@@ -1,61 +1,107 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import './Humidity.css';
 
+const HumidIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="#3182CE" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
+  </svg>
+);
+
 const Humidity = ({ humidity }) => {
-  const colors = {
-    dry: '#E05038',      // Цвет для сухого состояния
-    wet: '#3A5C40',      // Цвет для влажного состояния
-    textDark: '#1E3B23'  // Цвет текста
-  };
+  const status = useMemo(() => {
+    if (humidity === null || humidity === undefined) {
+      return { text: 'Нет данных', color: '#718096', bg: 'rgba(237,242,247,0.8)' };
+    }
+    if (humidity < 25) return { text: 'Очень сухо', color: '#C05621', bg: 'rgba(255,245,235,0.85)' };
+    if (humidity < 40) return { text: 'Сухо', color: '#D97706', bg: 'rgba(255,251,235,0.85)' };
+    if (humidity <= 65) return { text: 'Комфортно', color: '#2F855A', bg: 'rgba(240,255,244,0.85)' };
+    if (humidity <= 80) return { text: 'Влажно', color: '#2B6CB0', bg: 'rgba(235,248,255,0.85)' };
+    return { text: 'Очень влажно', color: '#1E3A5F', bg: 'rgba(219,234,254,0.85)' };
+  }, [humidity]);
 
-  const getHumidityColor = (hum) => {
-    if (hum === null) return colors.textDark;
-    if (hum < 30) return colors.dry;  // Порог 50% для разделения
-    return colors.wet;
-  };
+  const fillPercent = useMemo(() => {
+    if (humidity === null || humidity === undefined) return 0;
+    return Math.max(2, Math.min(98, humidity));
+  }, [humidity]);
 
-  const getStatusMessage = (hum) => {
-    if (hum === null) return 'Нет данных';
-    if (hum < 30) return '🏜️ Сухо';  // Меньше 50% - сухо
-    return '💧 Влажно';              // 50% и выше - влажно
-  };
+  const waterColor = useMemo(() => {
+    if (humidity === null) return '#A0AEC0';
+    if (humidity < 30) return '#ED8936';
+    if (humidity < 50) return '#38B2AC';
+    if (humidity <= 75) return '#3182CE';
+    return '#2B6CB0';
+  }, [humidity]);
+
+  // SVG wave path
+  const wavePath = useMemo(() => {
+    const y = 100 - fillPercent;
+    return `M0,${y} Q25,${y - 6} 50,${y} T100,${y} V100 H0 Z`;
+  }, [fillPercent]);
 
   return (
-    <div className="humidity-card">
-      <div className="humidity-header">
-        <h2 className="humidity-title">
-          <span className="icon">💧</span> Влажность
-        </h2>
-        <div className="weather-icons">
-          <span className="icon">☀️</span>
-          <span className="icon">🌧️</span>
-        </div>
+    <div className="humid-card">
+      <div className="humid-header">
+        <HumidIcon />
+        <h3 className="humid-title">Влажность</h3>
       </div>
 
-      <div className="humidity-display">
-        <div className="humidity-value" style={{ color: getHumidityColor(humidity) }}>
-          {humidity !== null ? humidity.toFixed(0) : '--'}
-          <span className="humidity-unit">%</span>
-        </div>
-        <div className="humidity-scale">
-          <span style={{ color: colors.dry }}>0%</span>
-          <div className="scale-bar">
-            <div 
-              className="scale-progress" 
-              style={{
-                width: humidity ? `${humidity}%` : '0%',
-                backgroundColor: getHumidityColor(humidity)
-              }}
-            />
+      <div className="humid-body">
+        {/* Круг с водной волной */}
+        <div className="wave-circle-wrap">
+          <svg viewBox="0 0 100 100" className="wave-svg">
+            <defs>
+              <clipPath id="wave-clip">
+                <circle cx="50" cy="50" r="46" />
+              </clipPath>
+            </defs>
+
+            {/* Фон круга */}
+            <circle cx="50" cy="50" r="46" fill="rgba(255,255,255,0.35)" stroke="rgba(255,255,255,0.5)" strokeWidth="2" />
+
+            {/* Вода с волной */}
+            <g clipPath="url(#wave-clip)">
+              <rect x="0" y="0" width="100" height="100" fill="transparent" />
+              <path
+                d={wavePath}
+                fill={waterColor}
+                opacity="0.85"
+                style={{ transition: 'd 1s ease-out' }}
+              >
+                <animate
+                  attributeName="d"
+                  dur="3s"
+                  repeatCount="indefinite"
+                  calcMode="spline"
+                  keySplines="0.4 0 0.2 1; 0.4 0 0.2 1"
+                  values={`
+                    M0,${100 - fillPercent} Q25,${100 - fillPercent - 5} 50,${100 - fillPercent} T100,${100 - fillPercent} V100 H0 Z;
+                    M0,${100 - fillPercent} Q25,${100 - fillPercent + 5} 50,${100 - fillPercent} T100,${100 - fillPercent} V100 H0 Z;
+                    M0,${100 - fillPercent} Q25,${100 - fillPercent - 5} 50,${100 - fillPercent} T100,${100 - fillPercent} V100 H0 Z
+                  `}
+                />
+              </path>
+              {/* Отражение */}
+              <ellipse cx="50" cy="55" rx="30" ry="8" fill="rgba(255,255,255,0.15)" />
+            </g>
+
+            {/* Обводка */}
+            <circle cx="50" cy="50" r="46" fill="none" stroke={waterColor} strokeWidth="2.5" opacity="0.6" />
+          </svg>
+
+          <div className="humid-value-overlay">
+            <span className="humid-value" style={{ color: waterColor }}>
+              {humidity !== null ? Math.round(humidity) : '--'}
+            </span>
+            <span className="humid-unit">%</span>
           </div>
-          <span style={{ color: colors.wet }}>100%</span>
         </div>
       </div>
 
-      <div className="humidity-footer">
-        <p className="status-message">
-          {getStatusMessage(humidity)}
-        </p>
+      <div
+        className="humid-status"
+        style={{ backgroundColor: status.bg, color: status.color }}
+      >
+        {status.text}
       </div>
     </div>
   );

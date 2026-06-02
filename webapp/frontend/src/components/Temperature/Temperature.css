@@ -1,240 +1,164 @@
-.temperature-card {
+.temp-card {
+  background: linear-gradient(135deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.35) 100%);
   border-radius: 20px;
-  padding: 12px;
-  color: #2D3748;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  height: 370px; /* Фиксированная высота */
+  padding: 14px;
+  width: 220px;
+  height: 280px;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  background: linear-gradient(135deg, #E8F5E9 0%, #F1F8E9 100%);
-}
-
-.temperature-header {
+  align-items: center;
   text-align: center;
-  margin-bottom: 20px; /* Увеличил отступ */
-  flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,0.45);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.4);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  transition: all 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+  position: relative;
+  overflow: hidden;
 }
 
-.temperature-title {
-  font-size: 1.2rem; /* Увеличил размер шрифта */
-  font-weight: 600;
+.temp-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 14px 40px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.5);
+}
+
+.temp-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.temp-header svg {
+  width: 20px;
+  height: 20px;
+}
+
+.temp-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0F2925;
   margin: 0;
-  display: flex;
-  width: 250px;
-  align-items: center;
-  justify-content: center;
-  gap: 6px; /* Увеличил отступ */
-  color: #2D3748;
 }
 
-.temperature-display-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+.temp-body {
   flex: 1;
-  min-height: 0;
-  margin-bottom: 20px; /* Увеличил отступ */
-}
-
-.thermometer-wrapper {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px; /* Увеличил отступ */
-  height: 100%;
   justify-content: center;
+  gap: 8px;
 }
 
-.thermometer {
+/* Термометр */
+.thermo-glass {
   position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 15px; /* Увеличил отступ */
-  height: 180px; /* Увеличил высоту */
-  margin-bottom: 10px; /* Увеличил отступ */
 }
 
-.thermometer-bulb {
-  width: 35px; /* Увеличил размер */
-  height: 35px;
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border: 2px solid rgba(76, 175, 80, 0.3);
-  position: relative;
-  z-index: 2;
-  backdrop-filter: blur(5px);
-}
-
-.thermometer-bulb-inner {
-  width: 26px; /* Увеличил размер */
-  height: 26px;
-  background: linear-gradient(45deg, #FF6B6B, #8ED7C6, #5D9CEC);
-  border-radius: 50%;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  opacity: 0.8;
-}
-
-.thermometer-tube {
-  width: 18px; /* Увеличил ширину */
-  height: 160px; /* Увеличил высоту */
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 8px;
-  border: 2px solid rgba(76, 175, 80, 0.3);
+.thermo-tube {
+  width: 18px;
+  height: 110px;
+  background: rgba(255,255,255,0.4);
+  border-radius: 10px 10px 0 0;
+  border: 2px solid rgba(255,255,255,0.6);
+  border-bottom: none;
   position: relative;
   overflow: hidden;
-  backdrop-filter: blur(5px);
+  backdrop-filter: blur(4px);
 }
 
-.thermometer-mercury-container {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 100%;
-  overflow: hidden;
-}
-
-.thermometer-mercury {
+.thermo-liquid {
   position: absolute;
   bottom: 0;
   left: 2px;
   right: 2px;
-  height: 0%;
-  border-radius: 6px;
-  transition: height 1s ease-in-out;
-  background: linear-gradient(to top, 
-    #FF6B6B 0%, 
-    #FFA726 25%, 
-    #8ED7C6 50%,
-    #48BFE3 75%, 
-    #5D9CEC 100%
-  );
+  border-radius: 0 0 6px 6px;
+  transition: height 1s ease-out, background 0.5s ease;
+  box-shadow: inset 0 -4px 8px rgba(0,0,0,0.1);
 }
 
-.thermometer-mercury.pulse {
-  animation: pulse 2s infinite;
-}
-
-.scale-line {
+.thermo-bubbles {
   position: absolute;
+  bottom: 0;
   left: 0;
   right: 0;
-  height: 1px;
-  background: rgba(76, 175, 80, 0.4);
-  transform: translateY(50%);
+  height: 100%;
+  pointer-events: none;
 }
 
-.thermometer-scale {
+.thermo-bubbles span {
   position: absolute;
-  right: -30px; /* Увеличил отступ */
-  top: 0;
-  bottom: 0;
+  bottom: 4px;
+  width: 4px;
+  height: 4px;
+  background: rgba(255,255,255,0.6);
+  border-radius: 50%;
+  animation: bubbleRise 2.5s infinite ease-in;
+}
+
+@keyframes bubbleRise {
+  0% { transform: translateY(0); opacity: 0; }
+  20% { opacity: 0.7; }
+  100% { transform: translateY(-80px); opacity: 0; }
+}
+
+.thermo-bulb {
+  width: 38px;
+  height: 38px;
+  background: rgba(255,255,255,0.4);
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.6);
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  height: 160px; /* Соответствует высоте tube */
-}
-
-.scale-mark {
-  position: absolute;
-  right: 0;
-  font-size: 0.8rem; /* Увеличил размер шрифта */
-  color: #4A5568;
-  font-weight: 500;
-  transform: translateY(50%);
-}
-
-.current-temperature {
-  background: rgba(255, 255, 255, 0.5);
-  padding: 10px 18px; /* Увеличил отступы */
-  border-radius: 12px;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(76, 175, 80, 0.2);
-}
-
-.temperature-value {
-  font-size: 1.3rem; /* Увеличил размер шрифта */
-  font-weight: bold;
-  color: #2D3748;
-}
-
-.no-data-indicator {
-  text-align: center;
-  padding: 25px; /* Увеличил отступы */
-  color: #4A5568;
-}
-
-.no-data-icon {
-  font-size: 2.5rem; /* Увеличил размер */
-  margin-bottom: 15px; /* Увеличил отступ */
-}
-
-.temperature-footer {
-  text-align: center;
-  flex-shrink: 0;
-
-}
-
-.status-message {
-  padding: 12px 20px; /* Увеличил отступы */
-  border-radius: 12px;
-  font-weight: 600;
-  display: inline-flex;
   align-items: center;
-  gap: 10px; /* Увеличил отступ */
-  backdrop-filter: blur(5px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  font-size: 1rem; /* Увеличил размер шрифта */
+  justify-content: center;
+  margin-top: -2px;
+  position: relative;
+  z-index: 2;
+  backdrop-filter: blur(4px);
 }
 
-.status-icon {
-  font-size: 1.2rem; /* Увеличил размер */
+.thermo-bulb-inner {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  transition: background 0.5s ease;
+  box-shadow: inset 0 -3px 6px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.1);
 }
 
-@keyframes pulse {
-  0% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.7;
-  }
-  100% {
-    opacity: 1;
-  }
+.temp-value-block {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
 }
 
-/* Адаптивность */
-@media (max-width: 768px) {
-  .temperature-card {
-    padding: 18px;
-    height: 320px; /* Немного уменьшил для мобильных */
-  }
-  
-  .temperature-title {
-    font-size: 1.2rem;
-  }
-  
-  .thermometer {
-    transform: scale(0.9); /* Меньшее масштабирование */
-    margin-bottom: 5px;
-  }
-  
-  .status-message {
-    font-size: 0.9rem;
-    padding: 10px 16px;
-  }
-  
-  .temperature-value {
-    font-size: 1.2rem;
-  }
-  
-  .no-data-icon {
-    font-size: 2.2rem;
+.temp-value {
+  font-size: 1.8rem;
+  font-weight: 800;
+  line-height: 1;
+  transition: color 0.5s ease;
+}
+
+.temp-unit {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #5a7c5a;
+}
+
+.temp-status {
+  padding: 6px 14px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255,255,255,0.3);
+}
+
+@media (max-width: 480px) {
+  .temp-card {
+    width: 100%;
+    max-width: 220px;
   }
 }

@@ -1,0 +1,174 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden; 
+  height: 100%; 
+  width: 100%;
+}
+
+.home-container {
+  position: relative;
+  height: 100vh;
+  height: calc(var(--vh, 1vh) * 100); 
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-image: url('../assets/images/fishfonts.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.content-wrapper {
+  padding: 50px 30px;
+  max-width: 800px;
+  width: 100%;
+  text-align: center; 
+  border-radius: 50px;
+  background: rgba(0, 150, 200, 0.1);
+  backdrop-filter: blur(5px);
+  box-sizing: border-box;
+  transition: all 0.3s ease; 
+}
+
+.main-title {
+  color: #1a4314; 
+  font-size: clamp(2rem, 8vw, 2.9rem); 
+  margin-bottom: clamp(15px, 3vh, 20px);
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: clamp(2pt, 2vw, 6pt);
+  font-family: 'Calypso', sans-serif;
+  word-break: break-word; 
+  transition: all 0.3s ease;
+}
+
+.description-text {
+  font-size: clamp(1rem, 4vw, 1.4rem);
+  line-height: 1.6;
+  margin-bottom: clamp(20px, 4vh, 30px);
+  color: #2c4f16;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  font-family: 'Calypso', sans-serif;
+  text-align: center; 
+  padding: 0 10px;
+  transition: all 0.3s ease;
+}
+
+.description-text p {
+  margin: 0;
+  word-break: break-word;
+}
+
+.button-container {
+  display: flex;
+  justify-content: center;
+  padding: 0 10px;
+}
+
+.cta-button {
+  background-color: #1a4314;
+  color: #f5d742;
+  padding: clamp(12px, 3vh, 18px) clamp(25px, 5vw, 45px);
+  border: none;
+  border-radius: clamp(6px, 2vw, 8px);
+  font-size: clamp(1rem, 4vw, 1.3rem);
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  font-family: 'Calypso', sans-serif;
+  letter-spacing: 1px;
+  width: fit-content;
+  min-width: 200px; 
+  max-width: 100%;
+  white-space: nowrap; 
+}
+
+.cta-button:hover {
+  transform: scale(1.05);
+  background-color: #2a5e1f;
+}
+
+/* Медиа-запрос для экранов шириной 1200px */
+@media (max-width: 1200px) {
+  .content-wrapper {
+    max-width: 700px; 
+    padding: 40px 25px; 
+    border-radius: 40px; 
+  }
+  
+  .main-title {
+    font-size: 2.5rem; 
+    letter-spacing: 4pt; 
+  }
+  
+  .description-text {
+    font-size: 1.2rem;
+    max-width: 500px; 
+  }
+  
+  .cta-button {
+    min-width: 180px; 
+    padding: 15px 35px; 
+    font-size: 1.1rem; 
+  }
+}
+
+
+@media (max-width: 480px) {
+  .home-container {
+    padding: 15px;
+  }
+  
+  .content-wrapper {
+    padding: 30px 20px;
+    border-radius: 30px;
+    background: rgba(0, 150, 200, 0.15);
+  }
+  
+  .main-title {
+    letter-spacing: 2pt;
+    font-size: 2rem;
+  }
+  
+  .description-text {
+    line-height: 1.5;
+    padding: 0 5px;
+    font-size: 1rem;
+  }
+  
+  .cta-button {
+    min-width: 150px;
+    padding: 12px 20px;
+    white-space: normal;
+    word-break: break-word;
+  }
+}
+
+/* Поддержка ландшафтной ориентации на мобильных */
+@media (max-height: 500px) and (orientation: landscape) {
+  .home-container {
+    height: auto;
+    min-height: 100vh;
+    min-height: calc(var(--vh, 1vh) * 100);
+    padding: 30px 20px;
+  }
+  
+  .content-wrapper {
+    padding: 25px 20px;
+  }
+  
+  .main-title {
+    margin-bottom: 10px;
+  }
+  
+  .description-text {
+    margin-bottom: 15px;
+  }
+}

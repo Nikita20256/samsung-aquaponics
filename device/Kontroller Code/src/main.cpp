@@ -21,7 +21,7 @@ DigitalIn myVoda(D4);
 WiFiInterface *wifi;
 
 // MQTT настройки
-const char* hostname = "147.45.102.173";
+const char* hostname = "2.26.108.249";
 int port = 1883;
 const char* temperatureTopic = "aquaponics/dev1/temperature";
 const char* humidityTopic = "aquaponics/dev1/humidity";

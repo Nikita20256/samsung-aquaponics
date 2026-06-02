@@ -1,17 +1,18 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import Navbar from './components/Navbar';
-import Login from './components/Login';
-import Register from './components/Register';
+import Navbar from './components/Navbar/Navbar';
+import Login from './components/Login/Login';
+import Register from './components/Register/Register';
 import Dashboard from './components/Dashboard/Dashboard';
-import Plants from './components/Plants';
-import HomePage from './components/HomePage'; // Перенесли в components
+import Plants from './components/Plants/Plants';
+import HomePage from './components/HomePage/HomePage'; 
+import Admin from './components/Admin/Admin';
+import Profile from './components/Profile/Profile';
 import './styles/fonts.css';
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem('token') || null);
-
   useEffect(() => {
     if (token) {
       localStorage.setItem('token', token);
@@ -28,15 +29,11 @@ function App() {
 
   return (
     <Router>
-      {/* Передаем token и setToken в Navbar */}
       <Navbar token={token} setToken={setToken} />
       <Routes>
-        {/* Публичные маршруты */}
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<Login setToken={setToken} />} />
         <Route path="/register" element={<Register setToken={setToken} />} />
-        
-        {/* Защищенные маршруты */}
         <Route
           path="/dashboard"
           element={
@@ -53,8 +50,22 @@ function App() {
             </ProtectedRoute>
           }
         />
-
-        {/* Перенаправление для несуществующих путей */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <Admin />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile token={token} />
+            </ProtectedRoute>
+          }
+        />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>

@@ -1,0 +1,139 @@
+# ===========================================
+# Aquaponics — Docker Compose Stack
+# ===========================================
+# Быстрый старт:
+#   1. Убедитесь, что Docker и Docker Compose установлены
+#   2. Запустите ./start.bat (Windows) или ./start.sh (Linux/macOS)
+#   3. Либо вручную: docker compose up -d --build
+# ===========================================
+
+services:
+  # -------------------------------------------
+  # PostgreSQL Database
+  # -------------------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: aquaponics-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-aquaponics_app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Database password is required}
+      POSTGRES_DB: ${POSTGRES_DB:-aquaponics_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-db:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aquaponics_app} -d ${POSTGRES_DB:-aquaponics_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - aquaponics-network
+
+  # -------------------------------------------
+  # Mosquitto MQTT Broker
+  # -------------------------------------------
+  mqtt:
+    build:
+      context: ./docker/mosquitto
+      dockerfile: Dockerfile
+    container_name: aquaponics-mqtt
+    restart: unless-stopped
+    environment:
+      MQTT_USER: ${MQTT_USERNAME:-device}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:-device_password}
+    volumes:
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_log:/mosquitto/log
+    ports:
+      - "${MQTT_PORT:-1883}:1883"
+      - "${MQTT_WS_PORT:-9001}:9001"
+    networks:
+      - aquaponics-network
+
+  # -------------------------------------------
+  # Backend API Server
+  # -------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ../docker/Dockerfile.backend
+    container_name: aquaponics-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      # Database
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-aquaponics_db}
+      DB_USER: ${POSTGRES_USER:-aquaponics_app}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Database password is required}
+      # JWT
+      JWT_SECRET: ${JWT_SECRET:?JWT secret is required}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
+      # MQTT
+      MQTT_HOST: ${MQTT_HOST:-mqtt://mqtt:1883}
+      MQTT_USERNAME: ${MQTT_USERNAME:-device}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:-device_password}
+      # CORS
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,http://localhost:80}
+      # Email (optional)
+      EMAIL_HOST: ${EMAIL_HOST:-}
+      EMAIL_PORT: ${EMAIL_PORT:-}
+      EMAIL_USER: ${EMAIL_USER:-}
+      EMAIL_PASS: ${EMAIL_PASS:-}
+    ports:
+      - "${BACKEND_PORT:-3000}:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+      mqtt:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    networks:
+      - aquaponics-network
+
+  # -------------------------------------------
+  # Frontend Web Application
+  # -------------------------------------------
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+    container_name: aquaponics-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - aquaponics-network
+
+# -------------------------------------------
+# Volumes
+# -------------------------------------------
+volumes:
+  postgres_data:
+    name: aquaponics-postgres-data
+  mosquitto_data:
+    name: aquaponics-mosquitto-data
+  mosquitto_log:
+    name: aquaponics-mosquitto-log
+
+# -------------------------------------------
+# Network
+# -------------------------------------------
+networks:
+  aquaponics-network:
+    name: aquaponics-network
+    driver: bridge
