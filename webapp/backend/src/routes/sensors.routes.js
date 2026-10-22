@@ -27,4 +27,7 @@ router.get('/lightswitches', sensorsController.getLightSwitches);
 // GET /api/sensors/all - Все текущие данные (НОВЫЙ)
 router.get('/all', sensorsController.getAllSensors);
 
+// GET /api/sensors/status - Статус устройства (в сети / не в сети)
+router.get('/status', sensorsController.getStatus);
+
 module.exports = router;

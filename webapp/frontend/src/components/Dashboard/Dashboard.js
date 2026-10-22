@@ -5,6 +5,7 @@ import LightIntensity from '../LightIntensity/LightIntensity';
 import SensorChart from '../SensorChart/SensorChart';
 
 import DeviceControlPanel from '../DeviceControlPanel/DeviceControlPanel';
+import sensorService from '../../services/sensorService';
 import './Dashboard.css';
 import Temperature from '../Temperature/temperature';
 import backgroundImage from '../assets/images/flot.png';
@@ -38,6 +39,19 @@ const API_CONFIG = {
     historicalLight: '/data/light',
     historicalTemp: '/data/temperature',
   }
+};
+
+// Рендерит «Не в сети · N мин назад» по времени последней связи
+const formatLastSeen = (lastSeen) => {
+  if (!lastSeen) return 'Не в сети';
+  const diffSec = Math.floor((Date.now() - new Date(lastSeen).getTime()) / 1000);
+  if (diffSec < 60) return 'Не в сети · только что';
+  const minutes = Math.floor(diffSec / 60);
+  if (minutes < 60) return `Не в сети · ${minutes} мин назад`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `Не в сети · ${hours} ч назад`;
+  const days = Math.floor(hours / 24);
+  return `Не в сети · ${days} дн назад`;
 };
 
 const ChevronIcon = ({ open }) => (
@@ -80,6 +94,8 @@ function Dashboard() {
     light: null,
     temperature: null,
   });
+
+  const [deviceStatus, setDeviceStatus] = useState(null);
 
   const [devices, setDevices] = useState([]);
   const [deviceId, setDeviceId] = useState(null);
@@ -187,6 +203,7 @@ function Dashboard() {
       temperature: null,
     });
     setHistoricalData(null);
+    setDeviceStatus(null);
     setDeviceId(newId);
     localStorage.setItem('selectedDeviceId', newId);
     setDropdownOpen(false);
@@ -246,6 +263,16 @@ function Dashboard() {
     }
   }, [deviceId]);
 
+  const fetchDeviceStatus = useCallback(async () => {
+    if (!deviceId) return;
+    try {
+      const status = await sensorService.getDeviceStatus(deviceId);
+      setDeviceStatus(status);
+    } catch (err) {
+      console.error('Ошибка получения статуса устройства:', err);
+    }
+  }, [deviceId]);
+
   const fetchHistoricalData = useCallback(async (start, end) => {
     if (!deviceId) return;
 
@@ -290,10 +317,14 @@ function Dashboard() {
   useEffect(() => {
     if (deviceId) {
       fetchCurrentData();
-      const intervalId = setInterval(fetchCurrentData, 10000);
+      fetchDeviceStatus();
+      const intervalId = setInterval(() => {
+        fetchCurrentData();
+        fetchDeviceStatus();
+      }, 10000);
       return () => clearInterval(intervalId);
     }
-  }, [fetchCurrentData, deviceId]);
+  }, [fetchCurrentData, fetchDeviceStatus, deviceId]);
 
   useEffect(() => {
     if (deviceId) {
@@ -339,6 +370,12 @@ function Dashboard() {
               >
                 <DeviceIcon />
                 <span className="device-selector-label">{selectedDeviceLabel}</span>
+                {deviceStatus && deviceStatus.online !== null && deviceStatus.online !== undefined && (
+                  <span className={`device-status ${deviceStatus.online ? 'status-online' : 'status-offline'}`}>
+                    <span className="status-dot" />
+                    {deviceStatus.online ? 'В сети' : formatLastSeen(deviceStatus.lastSeen)}
+                  </span>
+                )}
                 <ChevronIcon open={dropdownOpen} />
               </button>
 

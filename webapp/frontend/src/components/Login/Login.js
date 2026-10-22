@@ -20,6 +20,7 @@ function Login({ setToken }) {
       const response = await axios.post('/login', {
         login,
         password,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       }, {
         baseURL: API_BASE_URL,
       });
@@ -57,6 +58,9 @@ function Login({ setToken }) {
           />
           <p className="login-link">
             Нет аккаунта? <a href="/register">Зарегистрироваться</a>
+          </p>
+          <p className="login-forgot">
+            <a href="/forgot-password">Забыли пароль?</a>
           </p>
           {error && <p className="login-error">{error}</p>}
           <button type="submit" className="login-button">Войти</button>

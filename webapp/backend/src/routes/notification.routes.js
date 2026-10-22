@@ -11,6 +11,7 @@ router.use(authenticateToken);
 
 router.get('/settings', notificationController.getSettings);
 router.post('/settings', notificationController.updateSettings);
+router.post('/device', notificationController.updateDevice);
 router.post('/thresholds', notificationController.updateThresholds);
 router.post('/test-email', notificationController.testEmail);
 

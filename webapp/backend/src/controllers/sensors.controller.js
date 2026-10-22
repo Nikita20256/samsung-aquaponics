@@ -82,6 +82,7 @@ const getLightSwitches = async (req, res, next) => {
 const getAllSensors = async (req, res, next) => {
     try {
         const data = mqttService.getLatestData(req.deviceId);
+        const { online, lastSeen } = mqttService.getDeviceStatus(req.deviceId);
 
         // Получаем счетчик включений
         const switchesResult = await pool.query(
@@ -95,10 +96,24 @@ const getAllSensors = async (req, res, next) => {
             temperature: data?.temperature ?? null,
             water: data?.water ?? 0,
             lightSwitches: switchesResult.rows.length > 0 ? switchesResult.rows[0].count : 0,
+            online,
+            lastSeen: lastSeen ? new Date(lastSeen).toISOString() : null,
         });
     } catch (err) {
         next(err);
     }
+};
+
+/**
+ * Получить статус устройства (в сети / не в сети)
+ * GET /api/sensors/status
+ */
+const getStatus = (req, res) => {
+    const { online, lastSeen } = mqttService.getDeviceStatus(req.deviceId);
+    res.json({
+        online,
+        lastSeen: lastSeen ? new Date(lastSeen).toISOString() : null,
+    });
 };
 
 module.exports = {
@@ -108,4 +123,5 @@ module.exports = {
     getWaterLevel,
     getLightSwitches,
     getAllSensors,
+    getStatus,
 };

@@ -28,3 +28,9 @@ scratch/
 # Random lock files without package.json
 /package-lock.json
 /webapp/package-lock.json
+
+# Local tooling artifacts
+venv_report/
+
+# Local database backups
+webapp/backup_*.sql

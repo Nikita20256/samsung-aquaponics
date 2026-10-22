@@ -167,6 +167,25 @@
   color: #9acd32;
 }
 
+.login-forgot {
+  color: #adff2f;
+  font-family: 'Montaga', serif;
+  font-size: 0.9rem;
+  text-align: center;
+  margin-top: 0;
+}
+
+.login-forgot a {
+  color: rgba(173, 255, 47, 0.75);
+  text-decoration: underline;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.login-forgot a:hover {
+  color: #adff2f;
+}
+
 /* Адаптивность: мобильные экраны */
 @media (max-width: 900px) {
   .login-page {

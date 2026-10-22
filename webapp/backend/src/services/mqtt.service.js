@@ -20,6 +20,18 @@ const hasDevice = (deviceId) => {
     return latestData.has(deviceId);
 };
 
+/**
+ * Статус устройства: в сети ли оно и когда последний раз выходило на связь.
+ * @returns {{ online: boolean, lastSeen: number|null }}
+ */
+const getDeviceStatus = (deviceId) => {
+    const data = latestData.get(deviceId);
+    const lastSeen = data?.lastSeen ?? null;
+    const online = lastSeen !== null
+        && (Date.now() - lastSeen) < config.device.offlineTimeoutSeconds * 1000;
+    return { online, lastSeen };
+};
+
 const getDeviceModes = (deviceId) => {
     if (!controlModes.has(deviceId)) {
         controlModes.set(deviceId, { light: 'auto', aeration: 'auto' });
@@ -51,8 +63,11 @@ const handleMessage = async (topic, message) => {
     const sensorType = topicParts[2];
 
     if (!latestData.has(deviceId)) {
-        latestData.set(deviceId, { humidity: 0, light: 0, temperature: 0, water: 0 });
+        latestData.set(deviceId, { humidity: 0, light: 0, temperature: 0, water: 0, lastSeen: null });
     }
+
+    // Фиксируем время последней связи при любом сообщении
+    latestData.get(deviceId).lastSeen = Date.now();
 
     if (sensorType === 'water') {
         const digitsOnly = messageStr.replace(/[^0-9-]/g, '');
@@ -177,6 +192,7 @@ module.exports = {
     disconnect,
     getLatestData,
     hasDevice,
+    getDeviceStatus,
     getDeviceModes,
     publishControl,
     latestData,

@@ -34,6 +34,12 @@ const config = {
     },
   },
 
+  // Устройство
+  device: {
+    // Через сколько секунд без сообщений устройство считается offline
+    offlineTimeoutSeconds: parseInt(process.env.DEVICE_OFFLINE_TIMEOUT_SECONDS, 10) || 120,
+  },
+
   // CORS
   cors: {
     origins: process.env.CORS_ORIGINS
@@ -47,6 +53,10 @@ const config = {
     port: parseInt(process.env.EMAIL_PORT, 10) || 587,
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
+    // Коды подтверждения (верификация email, смена почты, сброс пароля)
+    codeTtlMs: (parseInt(process.env.EMAIL_CODE_TTL_MINUTES, 10) || 15) * 60 * 1000,   // срок жизни кода
+    codeCooldownMs: (parseInt(process.env.EMAIL_CODE_RESEND_SECONDS, 10) || 60) * 1000, // повторная отправка
+    codeMaxAttempts: parseInt(process.env.EMAIL_CODE_MAX_ATTEMPTS, 10) || 5,             // попыток ввода
   },
 
 };

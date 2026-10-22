@@ -34,6 +34,16 @@ const sensorService = {
     },
 
     /**
+     * Получить статус устройства (в сети / не в сети)
+     */
+    getDeviceStatus: async (deviceId) => {
+        const response = await api.get(config.endpoints.sensors.status, {
+            params: { device_id: deviceId },
+        });
+        return response.data;
+    },
+
+    /**
      * Получить текущую влажность
      */
     getHumidity: async (deviceId) => {

@@ -19,6 +19,9 @@ CREATE TABLE IF NOT EXISTS users (
   login         TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
   email         TEXT UNIQUE,
+  email_verified BOOLEAN NOT NULL DEFAULT FALSE,
+  timezone      TEXT,
+  timezone_manual BOOLEAN NOT NULL DEFAULT FALSE,
   is_admin      BOOLEAN DEFAULT FALSE,
   CHECK (email IS NULL OR email ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
 );
@@ -27,10 +30,29 @@ CREATE TABLE IF NOT EXISTS users (
 -- 3. User-Device link
 -- ============================================
 CREATE TABLE IF NOT EXISTS user_devices (
-  user_id   BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-  device_id TEXT   NOT NULL REFERENCES devices(device_id) ON DELETE CASCADE,
+  user_id               BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  device_id             TEXT   NOT NULL REFERENCES devices(device_id) ON DELETE CASCADE,
+  notifications_enabled BOOLEAN NOT NULL DEFAULT TRUE,
   PRIMARY KEY (user_id, device_id)
 );
+
+-- ============================================
+-- 3b. Verification codes (email confirm, email change, password reset)
+-- ============================================
+CREATE TABLE IF NOT EXISTS verification_codes (
+  id         BIGSERIAL PRIMARY KEY,
+  user_id    BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  type       TEXT NOT NULL CHECK (type IN ('confirm_email', 'change_email', 'change_password', 'reset_password')),
+  code_hash  TEXT NOT NULL,
+  email      TEXT,
+  expires_at TIMESTAMP NOT NULL,
+  attempts   INTEGER NOT NULL DEFAULT 0,
+  used_at    TIMESTAMP,
+  created_at TIMESTAMP NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC')
+);
+
+CREATE INDEX IF NOT EXISTS idx_verification_codes_user_type
+  ON verification_codes (user_id, type, used_at);
 
 -- ============================================
 -- 4. Sensor readings
@@ -98,16 +120,17 @@ CREATE TABLE IF NOT EXISTS notification_settings (
 );
 
 -- ============================================
--- 8. Sensor thresholds per user
+-- 8. Sensor thresholds per user + device
 -- ============================================
 CREATE TABLE IF NOT EXISTS user_thresholds (
   id          BIGSERIAL PRIMARY KEY,
   user_id     BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  device_id   TEXT   NOT NULL REFERENCES devices(device_id) ON DELETE CASCADE,
   sensor_type TEXT NOT NULL CHECK (sensor_type IN ('temperature', 'humidity', 'light')),
   min_value   NUMERIC(10,2) NOT NULL,
   max_value   NUMERIC(10,2) NOT NULL,
   is_active   BOOLEAN NOT NULL DEFAULT TRUE,
-  UNIQUE (user_id, sensor_type)
+  UNIQUE (user_id, device_id, sensor_type)
 );
 
 -- ============================================
@@ -129,16 +152,16 @@ INSERT INTO notification_settings (user_id)
   SELECT user_id FROM users
   ON CONFLICT (user_id) DO NOTHING;
 
-INSERT INTO user_thresholds (user_id, sensor_type, min_value, max_value)
-  SELECT u.user_id, t.sensor_type, t.min_val, t.max_val
-  FROM users u
+INSERT INTO user_thresholds (user_id, device_id, sensor_type, min_value, max_value)
+  SELECT ud.user_id, ud.device_id, t.sensor_type, t.min_val, t.max_val
+  FROM user_devices ud
   CROSS JOIN (
     VALUES
       ('temperature', 15.0, 35.0),
       ('humidity',    30.0, 90.0),
       ('light',        0.0, 10000.0)
   ) AS t(sensor_type, min_val, max_val)
-  ON CONFLICT (user_id, sensor_type) DO NOTHING;
+  ON CONFLICT (user_id, device_id, sensor_type) DO NOTHING;
 
 -- ============================================
 -- 11. Permissions

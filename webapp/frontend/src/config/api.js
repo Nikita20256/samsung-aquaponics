@@ -26,6 +26,17 @@ const config = {
         login: '/auth/login',
         register: '/auth/register',
         device: '/auth/device',
+        confirmEmail: '/auth/confirm-email',
+        resendConfirmCode: '/auth/resend-confirm-code',
+        forgotPassword: '/auth/forgot-password',
+        resetPassword: '/auth/reset-password',
+
+        // User
+        devices: '/user/devices',
+        emailRequest: '/user/email/request',
+        emailConfirm: '/user/email/confirm',
+        passwordRequest: '/user/password/request',
+        passwordConfirm: '/user/password/confirm',
 
         // Current sensor data
         sensors: {
@@ -35,6 +46,7 @@ const config = {
             temperature: '/sensors/temperature',
             water: '/sensors/water',
             lightSwitches: '/sensors/lightswitches',
+            status: '/sensors/status',
         },
 
         // Historical data

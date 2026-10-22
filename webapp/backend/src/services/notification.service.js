@@ -13,10 +13,13 @@ const emailService = require('./email.service');
 const checkThresholds = async (deviceId, sensorType, value) => {
     try {
         // Находим всех пользователей, у которых привязано это устройство
+        // с включёнными уведомлениями, и их пороги для этого устройства
         const usersResult = await pool.query(`
             SELECT 
                 u.user_id, 
                 u.email,
+                u.email_verified,
+                u.timezone,
                 ns.email_enabled,
                 ns.notification_interval,
                 ut.min_value, 
@@ -26,9 +29,9 @@ const checkThresholds = async (deviceId, sensorType, value) => {
             FROM user_devices ud
             JOIN users u ON ud.user_id = u.user_id
             JOIN notification_settings ns ON u.user_id = ns.user_id
-            JOIN user_thresholds ut ON (u.user_id = ut.user_id AND ut.sensor_type = $2)
+            JOIN user_thresholds ut ON (u.user_id = ut.user_id AND ut.sensor_type = $2 AND ut.device_id = $1)
             LEFT JOIN notification_log nl ON (u.user_id = nl.user_id AND nl.device_id = $1 AND nl.sensor_type = $2)
-            WHERE ud.device_id = $1
+            WHERE ud.device_id = $1 AND ud.notifications_enabled = TRUE
         `, [deviceId, sensorType]);
 
         for (const user of usersResult.rows) {
@@ -48,11 +51,13 @@ const checkThresholds = async (deviceId, sensorType, value) => {
                         sensorType,
                         value,
                         minValue: user.min_value,
-                        maxValue: user.max_value
+                        maxValue: user.max_value,
+                        timezone: user.timezone || null,
+                        sentAt: new Date(),
                     };
 
-                    // Отправка Email
-                    if (user.email_enabled && user.email) {
+                    // Отправка Email (только при подтверждённой почте)
+                    if (user.email_enabled && user.email && user.email_verified) {
                         await emailService.sendThresholdAlert(user.email, alertData);
                     }
 

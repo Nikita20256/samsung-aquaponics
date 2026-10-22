@@ -187,6 +187,45 @@
   opacity: 0.7;
 }
 
+/* Шаг подтверждения почты */
+.register-info {
+  color: #d4faf4;
+  font-family: 'Montaga', serif;
+  font-size: 1rem;
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  background: rgba(173, 255, 47, 0.08);
+  border: 1px solid rgba(173, 255, 47, 0.2);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.register-info strong {
+  color: #adff2f;
+  word-break: break-all;
+}
+
+.register-resend {
+  background: transparent;
+  color: #adff2f;
+  border: 1px solid rgba(173, 255, 47, 0.4);
+  border-radius: 12px;
+  padding: 0.6rem 1.2rem;
+  margin-top: 0.8rem;
+  margin-left: auto;
+  margin-right: auto;
+  font-family: 'Montaga', serif;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  width: fit-content;
+}
+
+.register-resend:hover {
+  background: rgba(173, 255, 47, 0.12);
+}
+
 /* Адаптивность: мобильные экраны */
 @media (max-width: 900px) {
   .register-page {

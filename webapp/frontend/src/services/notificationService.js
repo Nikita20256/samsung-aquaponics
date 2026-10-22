@@ -5,15 +5,25 @@ import api from './api';
 
 const notificationService = {
     /**
-     * Получить настройки и пороги
+     * Получить список устройств пользователя
      */
-    getSettings: async () => {
-        const response = await api.get('/notifications/settings');
+    getDevices: async () => {
+        const response = await api.get('/user/devices');
         return response.data;
     },
 
     /**
-     * Сохранить общие настройки
+     * Получить настройки и пороги для устройства
+     */
+    getSettings: async (deviceId) => {
+        const response = await api.get('/notifications/settings', {
+            params: deviceId ? { device_id: deviceId } : {},
+        });
+        return response.data;
+    },
+
+    /**
+     * Сохранить общие настройки (почта, интервал)
      */
     updateSettings: async (settings) => {
         const response = await api.post('/notifications/settings', settings);
@@ -21,10 +31,22 @@ const notificationService = {
     },
 
     /**
-     * Сохранить пороги датчиков
+     * Сохранить устройство: вкл/выкл уведомлений и пороги
      */
-    updateThresholds: async (thresholds) => {
-        const response = await api.post('/notifications/thresholds', { thresholds });
+    updateDevice: async (deviceId, { notifications_enabled, thresholds }) => {
+        const response = await api.post('/notifications/device', {
+            device_id: deviceId,
+            notifications_enabled,
+            thresholds,
+        });
+        return response.data;
+    },
+
+    /**
+     * Сохранить пороги датчиков устройства
+     */
+    updateThresholds: async (deviceId, thresholds) => {
+        const response = await api.post('/notifications/thresholds', { device_id: deviceId, thresholds });
         return response.data;
     },
 
