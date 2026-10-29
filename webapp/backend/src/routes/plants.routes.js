@@ -10,8 +10,8 @@ const { requireAdmin } = require('../middleware/admin');
 // Публичный endpoint — получить все растения (доступен всем, авторизация не требуется)
 router.get('/', plantsController.getPlants);
 
-// Только админ — создать растение
-router.post('/', authenticateToken, requireAdmin, plantsController.createPlant);
+// Любой авторизованный пользователь может добавить растение в общий каталог
+router.post('/', authenticateToken, plantsController.createPlant);
 
 // Только админ — удалить растение
 router.delete('/:id', authenticateToken, requireAdmin, plantsController.deletePlant);

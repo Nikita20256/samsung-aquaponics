@@ -34,3 +34,6 @@ venv_report/
 
 # Local database backups
 webapp/backup_*.sql
+
+# Temporary phone pairing keys and Expo tunnel QR codes
+/webapp/mobile-access/

@@ -1,0 +1,16 @@
+const fs = require('node:fs');
+const path = require('node:path');
+const { randomBytes } = require('node:crypto');
+const { spawn } = require('node:child_process');
+const project = path.resolve(__dirname, '..');
+const directory = path.resolve(project, '../mobile-access');
+fs.mkdirSync(directory, { recursive: true });
+const key = randomBytes(32).toString('hex');
+fs.writeFileSync(path.join(directory, 'dev-access.json'), JSON.stringify({ key }));
+const env = { ...process.env, AQUAPONICS_DEV_PROXY_KEY: key };
+delete env.EXPO_OFFLINE; delete env.REACT_NATIVE_PACKAGER_HOSTNAME;
+const cli = path.join(path.dirname(require.resolve('expo/package.json')), 'bin/cli');
+console.log('After "Tunnel ready", run npm run mobile:qr in a second terminal.');
+const child = spawn(process.execPath, [cli, 'start', '--tunnel', 'ngrok', '--port', '8081', '--clear'], { cwd: project, env, stdio: 'inherit' });
+child.on('error', error => { console.error(error.message); process.exitCode = 1; });
+child.on('exit', code => { process.exitCode = code ?? 1; });

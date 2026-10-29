@@ -3,6 +3,16 @@
  */
 const { pool } = require('../config/database');
 
+const validateConditions = ({ temperature, light }) => {
+    if ([temperature, light].some(value => value != null && typeof value !== 'string')) {
+        return 'Температура и освещение должны быть текстом';
+    }
+    if ([temperature, light].some(value => typeof value === 'string' && value.trim().length > 80)) {
+        return 'Температура и освещение — не более 80 символов каждое';
+    }
+    return null;
+};
+
 const plantsController = {
     /**
      * Получить список всех растений
@@ -10,7 +20,7 @@ const plantsController = {
     getPlants: async (req, res) => {
         try {
             const { rows } = await pool.query(
-                'SELECT id, name, description, contains, image, is_preset, created_at FROM plants ORDER BY created_at'
+                'SELECT id, name, description, contains, image, temperature, light, is_preset, created_at FROM plants ORDER BY created_at'
             );
             res.json({
                 count: rows.length,
@@ -20,6 +30,8 @@ const plantsController = {
                     description: plant.description,
                     contains: plant.contains,
                     image: plant.image,
+                    temperature: plant.temperature,
+                    light: plant.light,
                     isPreset: plant.is_preset,
                     createdAt: plant.created_at,
                 })),
@@ -35,20 +47,22 @@ const plantsController = {
      */
     createPlant: async (req, res) => {
         try {
-            const { id, name, description, contains, image } = req.body;
+            const { id, name, description, contains, image, temperature, light } = req.body;
 
             if (!name || !description || !contains) {
                 return res.status(400).json({ error: 'Название, описание и состав обязательны' });
             }
+            const conditionError = validateConditions(req.body);
+            if (conditionError) return res.status(400).json({ error: conditionError });
 
             const plantId = id || (name.toLowerCase().replace(/\s+/g, '_') + Date.now());
             const containsArray = Array.isArray(contains) ? contains : [contains];
 
             const { rows } = await pool.query(
-                `INSERT INTO plants (id, name, description, contains, image)
-                 VALUES ($1, $2, $3, $4, $5)
-                 RETURNING id, name, description, contains, image, is_preset, created_at`,
-                [plantId, name, description, containsArray, image || null]
+                `INSERT INTO plants (id, name, description, contains, image, temperature, light)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7)
+                 RETURNING id, name, description, contains, image, temperature, light, is_preset, created_at`,
+                [plantId, name, description, containsArray, image || null, temperature?.trim() || null, light?.trim() || null]
             );
 
             res.status(201).json({
@@ -59,6 +73,8 @@ const plantsController = {
                     description: rows[0].description,
                     contains: rows[0].contains,
                     image: rows[0].image,
+                    temperature: rows[0].temperature,
+                    light: rows[0].light,
                     isPreset: rows[0].is_preset,
                     createdAt: rows[0].created_at,
                 },
@@ -103,20 +119,23 @@ const plantsController = {
     updatePlant: async (req, res) => {
         try {
             const { id } = req.params;
-            const { name, description, contains, image } = req.body;
+            const { name, description, contains, image, temperature, light } = req.body;
 
             if (!name || !description || !contains) {
                 return res.status(400).json({ error: 'Название, описание и состав обязательны' });
             }
+            const conditionError = validateConditions(req.body);
+            if (conditionError) return res.status(400).json({ error: conditionError });
 
             const containsArray = Array.isArray(contains) ? contains : [contains];
 
             const { rows } = await pool.query(
                 `UPDATE plants
-                 SET name = $1, description = $2, contains = $3, image = $4
-                 WHERE id = $5
-                 RETURNING id, name, description, contains, image, is_preset, created_at`,
-                [name, description, containsArray, image || null, id]
+                 SET name = $1, description = $2, contains = $3, image = $4,
+                     temperature = COALESCE($5, temperature), light = COALESCE($6, light)
+                 WHERE id = $7
+                 RETURNING id, name, description, contains, image, temperature, light, is_preset, created_at`,
+                [name, description, containsArray, image || null, temperature?.trim() ?? null, light?.trim() ?? null, id]
             );
 
             if (rows.length === 0) {
@@ -131,6 +150,8 @@ const plantsController = {
                     description: rows[0].description,
                     contains: rows[0].contains,
                     image: rows[0].image,
+                    temperature: rows[0].temperature,
+                    light: rows[0].light,
                     isPreset: rows[0].is_preset,
                     createdAt: rows[0].created_at,
                 },

@@ -10,12 +10,12 @@ const authenticateToken = (req, res, next) => {
     const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
-        return res.status(401).json({ error: 'Требуется токен доступа' });
+        return res.status(401).json({ code: 'AUTH_REQUIRED', error: 'Требуется токен доступа' });
     }
 
     jwt.verify(token, config.jwt.secret, (err, user) => {
         if (err) {
-            return res.status(403).json({ error: 'Недействительный или истекший токен' });
+            return res.status(403).json({ code: err.name === 'TokenExpiredError' ? 'TOKEN_EXPIRED' : 'INVALID_TOKEN', error: 'Недействительный или истекший токен' });
         }
         req.user = user;
         next();

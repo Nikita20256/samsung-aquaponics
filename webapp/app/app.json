@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "app",
+    "slug": "app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "platforms": ["android", "ios", "web"],
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0D1A0D",
+    "plugins": ["expo-secure-store"],
+    "ios": {
+      "supportsTablet": true
+    }
+  }
+}

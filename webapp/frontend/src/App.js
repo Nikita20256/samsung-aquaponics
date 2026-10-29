@@ -12,6 +12,10 @@ import Admin from './components/Admin/Admin';
 import Profile from './components/Profile/Profile';
 import './styles/fonts.css';
 
+function ProtectedRoute({ token, children }) {
+  return token ? children : <Navigate to="/login" />;
+}
+
 function App() {
   const [token, setToken] = useState(localStorage.getItem('token') || null);
   useEffect(() => {
@@ -24,10 +28,6 @@ function App() {
     }
   }, [token]);
 
-  const ProtectedRoute = ({ children }) => {
-    return token ? children : <Navigate to="/login" />;
-  };
-
   return (
     <Router>
       <Navbar token={token} setToken={setToken} />
@@ -39,7 +39,7 @@ function App() {
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute token={token}>
               <Dashboard />
             </ProtectedRoute>
           }
@@ -47,15 +47,15 @@ function App() {
         <Route
           path="/plants"
           element={
-            <ProtectedRoute>
-              <Plants />
+            <ProtectedRoute token={token}>
+              <Plants token={token} />
             </ProtectedRoute>
           }
         />
         <Route
           path="/admin"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute token={token}>
               <Admin />
             </ProtectedRoute>
           }
@@ -63,7 +63,7 @@ function App() {
         <Route
           path="/profile"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute token={token}>
               <Profile token={token} />
             </ProtectedRoute>
           }

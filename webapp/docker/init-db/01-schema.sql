@@ -96,6 +96,8 @@ CREATE TABLE IF NOT EXISTS plants (
   description   TEXT NOT NULL,
   contains      TEXT[] NOT NULL DEFAULT '{}',
   image         TEXT,
+  temperature   TEXT,
+  light         TEXT,
   is_preset     BOOLEAN DEFAULT FALSE,
   created_at    TIMESTAMP NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC')
 );
