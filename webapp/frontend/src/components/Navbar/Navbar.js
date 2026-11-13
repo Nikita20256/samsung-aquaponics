@@ -74,7 +74,7 @@ function Navbar({ token, setToken }) {
           {/* Десктопное меню */}
           {!isMobile && (
             <div className="navbar-links">
-              <button onClick={() => handleNavigation('/')} className="nav-button">Главная</button>
+              <button onClick={() => handleNavigation('/')} className="nav-button">О проекте</button>
               <button onClick={() => handleNavigation('/plants')} className="nav-button">Наши растения</button>
               {token && <button onClick={() => handleNavigation('/dashboard')} className="nav-button">Мое устройство</button>}
               {token && <button onClick={() => handleNavigation('/profile')} className="nav-button">Профиль</button>}
@@ -112,7 +112,7 @@ function Navbar({ token, setToken }) {
   <>
     <div className={`mobile-menu ${isMenuOpen ? 'open' : ''}`}>
       <div className="mobile-menu-content">
-        <button onClick={() => handleNavigation('/')} className="nav-button">Главная</button>
+        <button onClick={() => handleNavigation('/')} className="nav-button">О проекте</button>
               <button onClick={() => handleNavigation('/plants')} className="nav-button">Наши растения</button>
               {token && <button onClick={() => handleNavigation('/dashboard')} className="nav-button">Мое устройство</button>}
               {token && <button onClick={() => handleNavigation('/profile')} className="nav-button">Профиль</button>}
