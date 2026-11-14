@@ -182,7 +182,7 @@ export default function HomePage() {
             <dl className="about-specification-grid">{specifications.map(([label, value, note]) => <div key={label}>
               <dt>{label}</dt><dd className={label === 'Габариты, не более' ? 'about-dimensions' : undefined}>{value}</dd>
               {note && <dd className="about-specification-note">{note}</dd>}
-            </div>)}<div className="about-price"><dt>Ориентир розничной цены</dt><dd>До 9 000 ₽</dd></div></dl>
+            </div>)}<div className="about-price"><dt>Ориентир розничной цены</dt><dd>До 12 000 ₽</dd></div></dl>
           </div>
         </section>
       </div>
