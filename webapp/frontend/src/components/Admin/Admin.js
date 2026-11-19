@@ -19,10 +19,12 @@ export default function Admin() {
     const [stats, setStats] = useState(null);
     const [users, setUsers] = useState([]);
     const [devices, setDevices] = useState([]);
+    const [preorders, setPreorders] = useState([]);
 
     // Search
     const [userSearch, setUserSearch] = useState('');
     const [deviceSearch, setDeviceSearch] = useState('');
+    const [preorderSearch, setPreorderSearch] = useState('');
 
     // Forms & State
     const [newDevice, setNewDevice] = useState({ deviceId: '', secret: '' });
@@ -60,14 +62,16 @@ export default function Admin() {
 
         setError(null);
         try {
-            const [statsData, usersData, devicesData] = await Promise.all([
+            const [statsData, usersData, devicesData, preordersData] = await Promise.all([
                 adminService.getStats(),
                 adminService.getUsers(),
                 adminService.getDevices(),
+                adminService.getPreorders().catch(() => ({ preorders: [], count: 0 })),
             ]);
             setStats(statsData);
             setUsers(usersData.users);
             setDevices(devicesData.devices);
+            setPreorders(preordersData.preorders || []);
         } catch (err) {
             setError('Ошибка загрузки данных');
             console.error(err);
@@ -152,6 +156,20 @@ export default function Admin() {
         }
     };
 
+    const handleDeletePreorder = async (preorderId, fullName) => {
+        if (!window.confirm(`Удалить предзаказ от ${fullName}?`)) return;
+
+        setActionLoading(`preorder-${preorderId}`);
+        try {
+            await adminService.deletePreorder(preorderId);
+            loadData();
+        } catch (err) {
+            setError(err.response?.data?.error || 'Ошибка удаления предзаказа');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
 
     if (loading || isAdmin === null) {
         return (
@@ -181,6 +199,11 @@ export default function Admin() {
         {
             label: 'Количество записей за день:',
             value: stats?.recordsLast24h ?? 0,
+            icon: <ChartIcon size={56} />,
+        },
+        {
+            label: 'Количество предзаказов:',
+            value: stats?.totalPreorders ?? 0,
             icon: <ChartIcon size={56} />,
         },
     ];
@@ -218,6 +241,12 @@ export default function Admin() {
                         onClick={() => setActiveTab('devices')}
                     >
                         Устройства
+                    </button>
+                    <button
+                        className={`admin-tab ${activeTab === 'preorders' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('preorders')}
+                    >
+                        Предзаказы
                     </button>
                 </nav>
 
@@ -401,6 +430,73 @@ export default function Admin() {
                                             </td>
                                         </tr>
                                     ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
+                )}
+
+                {/* Preorders Tab */}
+                {activeTab === 'preorders' && (
+                    <>
+                        <div className="admin-search-box">
+                            <SearchIcon size={18} color="#6b8a83" />
+                            <input
+                                type="text"
+                                placeholder="Поиск по ФИО, телефону, городу или почте..."
+                                value={preorderSearch}
+                                onChange={(e) => setPreorderSearch(e.target.value)}
+                                className="admin-search-input"
+                            />
+                        </div>
+                        <div className="admin-table-container">
+                            <table className="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>ФИО</th>
+                                        <th>Телефон</th>
+                                        <th>Город</th>
+                                        <th>Почта</th>
+                                        <th>Дата</th>
+                                        <th>Действия</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {preorders.filter((p) => {
+                                        const q = preorderSearch.toLowerCase();
+                                        return !q ||
+                                            (p.fullName || '').toLowerCase().includes(q) ||
+                                            (p.phone || '').toLowerCase().includes(q) ||
+                                            (p.city || '').toLowerCase().includes(q) ||
+                                            (p.email || '').toLowerCase().includes(q) ||
+                                            String(p.id).includes(q);
+                                    }).map((p) => (
+                                        <tr key={p.id}>
+                                            <td>{p.id}</td>
+                                            <td>{p.fullName}</td>
+                                            <td><code>{p.phone}</code></td>
+                                            <td>{p.city || '—'}</td>
+                                            <td>{p.email || '—'}</td>
+                                            <td>{p.createdAt ? new Date(p.createdAt).toLocaleString('ru-RU') : '—'}</td>
+                                            <td>
+                                                <div className="action-buttons">
+                                                    <button
+                                                        className="action-btn action-btn--delete"
+                                                        onClick={() => handleDeletePreorder(p.id, p.fullName)}
+                                                        disabled={actionLoading === `preorder-${p.id}`}
+                                                    >
+                                                        Удалить
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {preorders.length === 0 && (
+                                        <tr>
+                                            <td colSpan="7" className="text-muted">Пока нет предзаказов</td>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>

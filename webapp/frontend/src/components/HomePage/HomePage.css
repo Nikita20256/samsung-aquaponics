@@ -109,8 +109,18 @@
 .preorder-field input { width: 100%; min-height: 58px; padding: 16px 17px; border: 1.2px solid var(--about-border); border-radius: 8px; background: #fff; color: var(--about-ink); font-size: 17px; line-height: 24px; }
 .preorder-field input::placeholder { color: #667d70; opacity: 1; }
 .preorder-field input[aria-invalid='true'] { border-color: #a33832; }
+.preorder-label-text { display: inline; }
+.preorder-optional { color: #667d70; font-weight: 400; font-size: 0.9em; margin-left: 2px; }
+.preorder-autocomplete { position: relative; }
+.preorder-suggestions { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 20; margin: 0; padding: 6px 0; list-style: none; background: #fff; border: 1.2px solid var(--about-border); border-radius: 8px; box-shadow: 0 8px 20px #102d281a; max-height: 220px; overflow-y: auto; }
+.preorder-suggestions li { padding: 10px 14px; font-size: 16px; line-height: 22px; color: var(--about-ink); cursor: pointer; }
+.preorder-suggestions li:hover { background: #eaf5ef; color: var(--about-accent); }
+.preorder-consent { display: flex; align-items: flex-start; gap: 10px; margin-top: 20px; font-size: 14px; line-height: 1.45; color: var(--about-copy); cursor: pointer; }
+.preorder-consent input { margin-top: 3px; flex: none; width: 18px; height: 18px; accent-color: var(--about-accent); }
 .preorder-error { color: #a33832; font-size: 14px; }
-.preorder-submit { width: 100%; margin-top: 38px; margin-bottom: 4px; }
+.preorder-submit { width: 100%; margin-top: 24px; margin-bottom: 4px; }
+.about-button:disabled, .preorder-submit:disabled { opacity: 0.55; cursor: not-allowed; box-shadow: none; }
+.about-button:disabled:hover { background: var(--about-accent); }
 .preorder-preview { padding-top: 28px; }
 .preorder-preview p { margin: 14px 0 24px; font-size: 17px; color: var(--about-copy); }
 html:has(.preorder-dialog[open]), body:has(.preorder-dialog[open]) { overflow: hidden !important; }
@@ -232,7 +242,7 @@ html:has(.preorder-dialog[open]), body:has(.preorder-dialog[open]) { overflow: h
   .preorder-desktop-break { display: none; }
   .preorder-dialog form { margin-top: 26px; }
   .preorder-field, .preorder-field input { font-size: 16px; }
-  .preorder-submit { margin-top: 28px; }
+  .preorder-submit { margin-top: 20px; }
 }
 .about-page .about-reveal {
   opacity: 1;

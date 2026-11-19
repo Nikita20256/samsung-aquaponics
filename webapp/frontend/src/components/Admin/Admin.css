@@ -234,6 +234,13 @@
     justify-content: center;
 }
 
+/* 5-я карточка (предзаказы) — по центру во втором ряду */
+.admin-stats-grid .stat-card:nth-child(5) {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: calc((100% - 60px) / 4);
+}
+
 /* ===== Table Styles ===== */
 .admin-table-container {
     overflow-x: auto;
@@ -421,6 +428,10 @@
     .admin-stats-grid {
         grid-template-columns: repeat(2, 1fr);
     }
+
+    .admin-stats-grid .stat-card:nth-child(5) {
+        width: calc((100% - 20px) / 2);
+    }
 }
 
 @media (max-width: 768px) {
@@ -457,5 +468,11 @@
 @media (max-width: 500px) {
     .admin-stats-grid {
         grid-template-columns: 1fr;
+    }
+
+    .admin-stats-grid .stat-card:nth-child(5) {
+        grid-column: auto;
+        justify-self: stretch;
+        width: auto;
     }
 }

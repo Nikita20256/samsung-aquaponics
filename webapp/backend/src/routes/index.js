@@ -12,6 +12,7 @@ const adminRoutes = require('./admin.routes');
 const userRoutes = require('./user.routes');
 const notificationRoutes = require('./notification.routes');
 const plantsRoutes = require('./plants.routes');
+const preorderRoutes = require('./preorder.routes');
 const { pool } = require('../config/database');
 
 // Подключаем роуты
@@ -23,6 +24,7 @@ router.use('/admin', adminRoutes);
 router.use('/user', userRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/plants', plantsRoutes);
+router.use('/preorders', preorderRoutes);
 
 // Health check endpoint for Docker
 router.get('/health', async (req, res) => {

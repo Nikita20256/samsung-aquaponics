@@ -22,4 +22,8 @@ router.delete('/devices/:deviceId/users/:userId', adminController.unbindDevice);
 router.get('/stats', adminController.getStats);
 router.get('/check', adminController.checkAdmin);
 
+// Предзаказы
+router.get('/preorders', adminController.getPreorders);
+router.delete('/preorders/:id', adminController.deletePreorder);
+
 module.exports = router;

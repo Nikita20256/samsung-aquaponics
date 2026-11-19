@@ -44,6 +44,16 @@ const adminService = {
     checkAdmin: async () => {
         const response = await api.get('/admin/check');
         return response.data;
+    },
+
+    getPreorders: async () => {
+        const response = await api.get('/admin/preorders');
+        return response.data;
+    },
+
+    deletePreorder: async (id) => {
+        const response = await api.delete(`/admin/preorders/${id}`);
+        return response.data;
     }
 };
 

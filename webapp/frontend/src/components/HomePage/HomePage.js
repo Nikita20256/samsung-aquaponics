@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import api from '../../services/api';
 import useSectionReveal from './useSectionReveal';
 import './HomePage.css';
 import background from './assets/76b24.png';
@@ -52,22 +53,119 @@ function DesignIcon({ src, className = '' }) {
 function PreorderDialog({ dialogRef }) {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
-  const [previewComplete, setPreviewComplete] = useState(false);
+  const [city, setCity] = useState('');
+  const [email, setEmail] = useState('');
+  const [consent, setConsent] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
+  const [submitError, setSubmitError] = useState('');
+  const [cityFocused, setCityFocused] = useState(false);
+  const [citySuggestions, setCitySuggestions] = useState([]);
   const formRef = useRef(null);
+  const cityFetchId = useRef(0);
   const close = () => dialogRef.current.close();
-  const reset = () => { setFullName(''); setPhone(''); setErrors({}); setPreviewComplete(false); };
-  const submit = event => {
+  const reset = () => {
+    setFullName('');
+    setPhone('');
+    setCity('');
+    setEmail('');
+    setConsent(false);
+    setErrors({});
+    setSubmitError('');
+    setSubmitted(false);
+    setSubmitting(false);
+    setCityFocused(false);
+    setCitySuggestions([]);
+  };
+
+  useEffect(() => {
+    const query = city.trim();
+    if (query.length < 2) {
+      setCitySuggestions([]);
+      return;
+    }
+    const id = ++cityFetchId.current;
+    const timer = setTimeout(async () => {
+      try {
+        const params = new URLSearchParams({
+          format: 'json',
+          addressdetails: '1',
+          'accept-language': 'ru',
+          limit: '10',
+          countrycodes: 'ru,by,kz,kg,tj,tm,uz,am,az,md',
+          featureType: 'settlement',
+          q: query,
+        });
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
+          headers: { Accept: 'application/json' },
+        });
+        if (!res.ok) throw new Error('geo');
+        const data = await res.json();
+        if (id !== cityFetchId.current) return;
+        const seen = new Set();
+        const items = [];
+        for (const item of Array.isArray(data) ? data : []) {
+          const addr = item.address || {};
+          const name = addr.city || addr.town || addr.village || addr.hamlet || addr.municipality || addr.state_district || item.name;
+          if (!name) continue;
+          const region = addr.state || addr.region || addr.county || '';
+          const country = addr.country || '';
+          const key = `${name}|${region}|${country}`.toLowerCase();
+          if (seen.has(key)) continue;
+          if (name.toLowerCase() === query.toLowerCase() && items.length === 0) continue;
+          seen.add(key);
+          const label = [name, region && region !== name ? region : '', country].filter(Boolean).join(', ');
+          items.push({ value: name, label });
+          if (items.length >= 8) break;
+        }
+        setCitySuggestions(items);
+      } catch {
+        if (id === cityFetchId.current) setCitySuggestions([]);
+      }
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [city]);
+
+  const showCitySuggestions = cityFocused && citySuggestions.length > 0;
+  const submit = async (event) => {
     event.preventDefault();
     const nextErrors = {};
     if (!fullName.trim()) nextErrors.fullName = 'Укажите ваше ФИО.';
-    if (!/^\+?[\d\s()-]+$/.test(phone.trim()) || !/^7\d{10}$/.test(phone.replace(/\D/g, '').replace(/^8/, '7'))) {
-      nextErrors.phone = 'Укажите номер телефона: +7 и 10 цифр.';
+    const phoneTrimmed = phone.trim();
+    const phoneDigits = phoneTrimmed.replace(/\D/g, '');
+    if (!phoneTrimmed || !/^\+?[\d\s()-]+$/.test(phoneTrimmed) || phoneDigits.length < 10 || phoneDigits.length > 15) {
+      nextErrors.phone = 'Укажите корректный номер телефона (например, +7 900 000-00-00).';
     }
+    if (!city.trim()) nextErrors.city = 'Укажите город.';
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      nextErrors.email = 'Укажите корректный email.';
+    }
+    if (!consent) nextErrors.consent = 'Необходимо дать согласие на обработку персональных данных.';
     setErrors(nextErrors);
-    if (Object.keys(nextErrors).length) { formRef.current.elements[Object.keys(nextErrors)[0]].focus(); return; }
-    // Local preview: contact details are neither persisted nor sent anywhere.
-    setPreviewComplete(true);
+    setSubmitError('');
+    if (Object.keys(nextErrors).length) {
+      const firstKey = Object.keys(nextErrors)[0];
+      const el = formRef.current?.elements[firstKey] || formRef.current?.querySelector(`[name="${firstKey}"]`);
+      el?.focus?.();
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await api.post('/preorders', {
+        fullName: fullName.trim(),
+        phone: phone.trim(),
+        city: city.trim(),
+        email: email.trim() || null,
+        consent: true,
+      });
+      setSubmitted(true);
+    } catch (err) {
+      setSubmitError(err.response?.data?.error || 'Не удалось отправить заявку. Попробуйте позже.');
+    } finally {
+      setSubmitting(false);
+    }
   };
   return (
     <dialog className="preorder-dialog" ref={dialogRef} aria-labelledby="preorder-title" aria-describedby="preorder-description" onClose={reset}
@@ -78,8 +176,8 @@ function PreorderDialog({ dialogRef }) {
       <button className="preorder-close" type="button" aria-label="Закрыть форму предзаказа" onClick={close}><img src={closeIcon} alt="" /></button>
       <h2 id="preorder-title">Оформить предзаказ</h2>
       <p id="preorder-description">Оставьте контакты. Мы позвоним и расскажем<br className="preorder-desktop-break" /> об устройстве и условиях предзаказа.</p>
-      {previewComplete ? <div className="preorder-preview" role="status"><h3>Форма заполнена</h3>
-        <p>Это демонстрационная форма. Заявка не отправлена, контакты не сохранены.</p>
+      {submitted ? <div className="preorder-preview" role="status"><h3>Заявка принята</h3>
+        <p>Спасибо! Мы свяжемся с вами в ближайшее время.</p>
         <button type="button" className="about-button" onClick={close}>Закрыть</button>
       </div> : <form ref={formRef} onSubmit={submit} noValidate>
         <label className="preorder-field" htmlFor="preorder-name">ФИО
@@ -92,7 +190,38 @@ function PreorderDialog({ dialogRef }) {
             value={phone} onChange={event => setPhone(event.target.value)} aria-invalid={!!errors.phone} aria-describedby={errors.phone ? 'preorder-phone-error' : undefined} />
           {errors.phone && <span id="preorder-phone-error" className="preorder-error" role="alert">{errors.phone}</span>}
         </label>
-        <button className="about-button preorder-submit" type="submit">Отправить заявку</button>
+        <label className="preorder-field preorder-field--autocomplete" htmlFor="preorder-city">Город
+          <div className="preorder-autocomplete">
+            <input id="preorder-city" name="city" autoComplete="address-level2" required maxLength={100} placeholder="Например, Москва"
+              value={city}
+              onChange={event => { setCity(event.target.value); if (errors.city) setErrors(e => ({ ...e, city: undefined })); }}
+              onFocus={() => setCityFocused(true)}
+              onBlur={() => setTimeout(() => setCityFocused(false), 120)}
+              aria-invalid={!!errors.city} aria-describedby={errors.city ? 'preorder-city-error' : undefined} />
+            {showCitySuggestions && (
+              <ul className="preorder-suggestions" role="listbox">
+                {citySuggestions.map((item) => (
+                  <li key={item.label} role="option" onMouseDown={() => { setCity(item.value); setCityFocused(false); setCitySuggestions([]); if (errors.city) setErrors(e => ({ ...e, city: undefined })); }}>
+                    {item.label}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          {errors.city && <span id="preorder-city-error" className="preorder-error" role="alert">{errors.city}</span>}
+        </label>
+        <label className="preorder-field" htmlFor="preorder-email"><span className="preorder-label-text">Почта <span className="preorder-optional">(необязательно)</span></span>
+          <input id="preorder-email" name="email" type="email" inputMode="email" autoComplete="email" maxLength={254} placeholder="example@mail.ru"
+            value={email} onChange={event => setEmail(event.target.value)} aria-invalid={!!errors.email} aria-describedby={errors.email ? 'preorder-email-error' : undefined} />
+          {errors.email && <span id="preorder-email-error" className="preorder-error" role="alert">{errors.email}</span>}
+        </label>
+        <label className="preorder-consent" htmlFor="preorder-consent">
+          <input id="preorder-consent" name="consent" type="checkbox" checked={consent} onChange={event => setConsent(event.target.checked)} aria-invalid={!!errors.consent} aria-describedby={errors.consent ? 'preorder-consent-error' : undefined} />
+          <span>Я даю согласие на обработку персональных данных в соответствии с Федеральным законом № 152-ФЗ «О персональных данных».</span>
+        </label>
+        {errors.consent && <span id="preorder-consent-error" className="preorder-error" role="alert">{errors.consent}</span>}
+        {submitError && <p className="preorder-error" role="alert">{submitError}</p>}
+        <button className="about-button preorder-submit" type="submit" disabled={submitting || !consent}>{submitting ? 'Отправка...' : 'Отправить заявку'}</button>
       </form>}
     </dialog>
   );

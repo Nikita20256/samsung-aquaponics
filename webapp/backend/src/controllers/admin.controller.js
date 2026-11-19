@@ -96,11 +96,20 @@ const adminController = {
                 // Ignore if table doesn't exist
             }
 
+            let totalPreorders = 0;
+            try {
+                const preordersResult = await pool.query('SELECT COUNT(*) FROM preorders');
+                totalPreorders = parseInt(preordersResult.rows[0].count);
+            } catch {
+                // Ignore if table doesn't exist yet
+            }
+
             res.json({
                 totalUsers: parseInt(usersResult.rows[0].count),
                 totalDevices: parseInt(devicesResult.rows[0].count),
                 totalAdmins: parseInt(adminsResult.rows[0].count),
                 recordsLast24h,
+                totalPreorders,
             });
         } catch (error) {
             console.error('Ошибка получения статистики:', error);
@@ -254,6 +263,56 @@ const adminController = {
             res.json({ message: 'Устройство отвязано от пользователя' });
         } catch (error) {
             console.error('Ошибка отвязки устройства:', error);
+            res.status(500).json({ error: 'Ошибка сервера' });
+        }
+    },
+
+    /**
+     * Получить список предзаказов
+     */
+    getPreorders: async (req, res) => {
+        try {
+            const { rows } = await pool.query(`
+        SELECT id, full_name, phone, city, email, created_at
+        FROM preorders
+        ORDER BY created_at DESC, id DESC
+      `);
+
+            res.json({
+                count: rows.length,
+                preorders: rows.map((p) => ({
+                    id: p.id,
+                    fullName: p.full_name,
+                    phone: p.phone,
+                    city: p.city,
+                    email: p.email,
+                    createdAt: p.created_at,
+                })),
+            });
+        } catch (error) {
+            console.error('Ошибка получения предзаказов:', error);
+            res.status(500).json({ error: 'Ошибка сервера' });
+        }
+    },
+
+    /**
+     * Удалить предзаказ
+     */
+    deletePreorder: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { rowCount } = await pool.query(
+                'DELETE FROM preorders WHERE id = $1',
+                [id]
+            );
+
+            if (rowCount === 0) {
+                return res.status(404).json({ error: 'Предзаказ не найден' });
+            }
+
+            res.json({ message: 'Предзаказ удалён' });
+        } catch (error) {
+            console.error('Ошибка удаления предзаказа:', error);
             res.status(500).json({ error: 'Ошибка сервера' });
         }
     },

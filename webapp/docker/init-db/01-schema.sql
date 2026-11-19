@@ -148,7 +148,22 @@ CREATE TABLE IF NOT EXISTS notification_log (
 );
 
 -- ============================================
--- 10. Default thresholds for existing users
+-- 10. Preorders (landing page form)
+-- ============================================
+CREATE TABLE IF NOT EXISTS preorders (
+  id         BIGSERIAL PRIMARY KEY,
+  full_name  TEXT NOT NULL,
+  phone      TEXT NOT NULL,
+  city       TEXT NOT NULL,
+  email      TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC')
+);
+
+CREATE INDEX IF NOT EXISTS idx_preorders_created_at
+  ON preorders (created_at DESC);
+
+-- ============================================
+-- 11. Default thresholds for existing users
 -- ============================================
 INSERT INTO notification_settings (user_id)
   SELECT user_id FROM users
@@ -166,7 +181,7 @@ INSERT INTO user_thresholds (user_id, device_id, sensor_type, min_value, max_val
   ON CONFLICT (user_id, device_id, sensor_type) DO NOTHING;
 
 -- ============================================
--- 11. Permissions
+-- 12. Permissions
 -- ============================================
 DO $$
 BEGIN
