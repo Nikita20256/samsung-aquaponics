@@ -180,7 +180,7 @@ function Plants({ token }) {
   const selectedId = searchParams.get('plant');
   const [plants, setPlants] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
-  const canAddPlants = Boolean(token);
+  const canAddPlants = isAdmin;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [editor, setEditor] = useState(null);
